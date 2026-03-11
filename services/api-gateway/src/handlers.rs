@@ -2,6 +2,9 @@ pub mod auth;
 pub mod timeline;
 pub mod events;
 pub mod documents;
+pub mod manual_input;
+pub mod dicom;
+pub mod ocr;
 pub mod ai;
 pub mod doctor_access;
 

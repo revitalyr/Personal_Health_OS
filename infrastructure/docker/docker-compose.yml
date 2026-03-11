@@ -92,6 +92,8 @@ services:
       - NATS_URL=nats://nats:4222
       - STORAGE_TYPE=local
       - STORAGE_PATH=/app/storage
+      - OCR_LANGUAGES=rus,eng
+      - MAX_FILE_SIZE=52428800
       - RUST_LOG=info
     volumes:
       - document_storage:/app/storage

@@ -1,0 +1,67 @@
+FROM rust:1.75-slim as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    libtesseract-dev \
+    libleptonica-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libtiff-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy Cargo files
+COPY Cargo.toml Cargo.lock ./
+COPY services/document-processor/Cargo.toml ./services/document-processor/
+COPY crates/ ./crates/
+
+# Create dummy source files to cache dependencies
+RUN mkdir -p services/document-processor/src crates/*/src
+RUN echo "fn main() {}" > services/document-processor/src/main.rs
+RUN find crates -name src -type d -exec sh -c 'echo "fn main() {}" > "$1/lib.rs"' _ {} \;
+
+# Build dependencies
+RUN cargo build --release --package document-processor
+RUN rm services/document-processor/src/main.rs
+RUN find crates -name lib.rs -delete
+
+# Copy actual source code
+COPY services/document-processor/src ./services/document-processor/src
+COPY crates/src ./crates/
+
+# Build the application
+RUN cargo build --release --package document-processor
+
+# Runtime image
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    libtesseract6 \
+    libleptonica6 \
+    libpng16-16 \
+    libjpeg62-turbo \
+    libtiff6 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy the binary
+COPY --from=builder /app/target/release/document-processor /usr/local/bin/
+
+# Create non-root user
+RUN useradd -r -s /bin/false appuser
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8082/health || exit 1
+
+EXPOSE 8082
+
+CMD ["document-processor"]

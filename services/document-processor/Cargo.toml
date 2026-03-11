@@ -1,0 +1,42 @@
+[package]
+name = "document-processor"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+axum = { workspace = true }
+tokio = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+config = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+async-nats = { workspace = true }
+
+# Document processing
+tesseract = "0.13"
+image = "0.24"
+pdf = "0.8"
+dicom-rs = "0.6"
+
+# File handling
+mime = "0.3"
+mime_guess = "2.0"
+tempfile = "3.8"
+
+# Storage & Database
+sqlx = { workspace = true }
+aws-sdk-s3 = "1.0"
+aws-config = "1.0"
+
+# Internal crates
+event-model = { path = "../../crates/event-model" }
+storage = { path = "../../crates/storage" }
+telemetry = { path = "../../crates/telemetry" }

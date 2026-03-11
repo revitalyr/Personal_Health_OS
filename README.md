@@ -56,11 +56,21 @@ Service      Workers        Service
 - Automatic timeline reconstruction with O(n log n) sorting
 - Duplicate detection and anomaly identification
 
-### 📄 Document Processing
-- Multi-format support: PDF, images, DICOM
-- OCR pipeline with Tesseract integration
-- Medical entity extraction and structured data generation
-- Cloud storage integration (S3, R2, GCS)
+### 📄 Comprehensive Document Processing
+- **Multi-format support**: PDF, images, DICOM, DOC, DOCX
+- **Advanced OCR**: Tesseract integration with Russian/English support
+- **Medical entity extraction**: Automatic identification of medications, symptoms, lab values
+- **DICOM processing**: Full support for medical imaging with metadata extraction
+- **Batch processing**: Handle multiple documents simultaneously
+- **Smart classification**: Automatic document type detection
+
+### 🖊️ Flexible Data Input Methods
+- **Document scanning**: Upload and OCR process medical documents
+- **DICOM import**: Import medical images from healthcare facilities
+- **Manual input**: Structured forms for all medical data types
+- **Quick input**: Fast entry for common symptoms and medications
+- **Template-based**: Pre-configured templates for frequent entries
+- **Voice input**: Future support for symptom description (planned)
 
 ### 🤖 AI-Powered Reports
 - LLM integration (OpenAI, Ollama, local models)
@@ -152,24 +162,122 @@ GET    /patients/{patient_id}/events/{event_id}
 GET    /patients/{patient_id}/events
 ```
 
-#### Document Processing
+#### Document Processing & Upload
 ```http
 POST   /documents/upload
+POST   /documents/upload/batch
 GET    /documents/{document_id}
-GET    /documents/{document_id}/extracted-data
+GET    /documents/{document_id}/preview
+GET    /documents/{document_id}/metadata
+GET    /documents/{document_id}/extracted
+DELETE /documents/{document_id}
+GET    /documents
+GET    /documents/search
+POST   /documents/{document_id}/classify
 ```
 
-#### AI Reports
+#### Manual Data Input
 ```http
-POST   /ai/reports
-GET    /ai/reports/{report_id}
-GET    /ai/reports/{report_id}/status
+POST   /input/manual
+POST   /input/symptom
+POST   /input/medication
+POST   /input/lab-result
+POST   /input/doctor-visit
+POST   /input/diagnosis
+POST   /input/quick-symptom
+POST   /input/quick-medication
 ```
 
-#### Doctor Access
+#### DICOM Processing
 ```http
-POST   /doctor-access/{patient_id}
-GET    /doctor-view/{token}
+POST   /dicom/upload
+GET    /dicom/{document_id}/metadata
+GET    /dicom/{document_id}/image
+GET    /dicom/{document_id}/studies
+GET    /dicom/{document_id}/annotations
+POST   /dicom/{document_id}/annotations
+```
+
+#### OCR Processing
+```http
+POST   /ocr/process/{document_id}
+GET    /ocr/status/{job_id}
+GET    /ocr/result/{job_id}
+POST   /ocr/process/batch
+GET    /ocr/batch/{batch_job_id}
+POST   /ocr/{job_id}/correct
+POST   /ocr/templates
+POST   /ocr/{document_id}/apply-template/{template_id}
+```
+
+### Example: Upload and Process Document
+
+```bash
+# Upload document
+curl -X POST http://localhost:8080/documents/upload \
+  -H "Authorization: Bearer {token}" \
+  -F "file=@medical_report.pdf" \
+  -F "patient_id={patient_id}"
+
+# Start OCR processing
+curl -X POST http://localhost:8080/ocr/process/{document_id} \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{"languages": ["rus", "eng"], "extract_entities": true}'
+
+# Check OCR status
+curl -X GET http://localhost:8080/ocr/status/{job_id} \
+  -H "Authorization: Bearer {token}"
+```
+
+### Example: Manual Data Input
+
+```bash
+# Add symptom
+curl -X POST http://localhost:8080/input/symptom \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "patient_id": "{patient_id}",
+    "name": "Головная боль",
+    "severity": 6,
+    "description": "Пульсирующая боль в лобной части"
+  }'
+
+# Add medication
+curl -X POST http://localhost:8080/input/medication \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "patient_id": "{patient_id}",
+    "name": "Ибупрофен",
+    "dosage": "400мг",
+    "frequency": "3 раза в день"
+  }'
+
+# Quick symptom entry
+curl -X POST http://localhost:8080/input/quick-symptom \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "patient_id": "{patient_id}",
+    "name": "Температура",
+    "severity": 4
+  }'
+```
+
+### Example: DICOM Upload
+
+```bash
+# Upload DICOM file
+curl -X POST http://localhost:8080/dicom/upload \
+  -H "Authorization: Bearer {token}" \
+  -F "file=@ct_scan.dcm" \
+  -F "patient_id={patient_id}"
+
+# Get DICOM metadata
+curl -X GET http://localhost:8080/dicom/{document_id}/metadata \
+  -H "Authorization: Bearer {token}"
 ```
 
 ### Example: Create Medical Event
