@@ -1,0 +1,175 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: health-os-db
+    environment:
+      POSTGRES_DB: health_os
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../database/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - health-os-network
+
+  # Redis for caching and queues
+  redis:
+    image: redis:7-alpine
+    container_name: health-os-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - health-os-network
+
+  # NATS for event messaging
+  nats:
+    image: nats:2-alpine
+    container_name: health-os-nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"  # HTTP monitoring
+    command: ["-js", "-m", "8222"]  # Enable JetStream and monitoring
+    networks:
+      - health-os-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile.api-gateway
+    container_name: health-os-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/health_os
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - TIMELINE_SERVICE_URL=http://timeline-service:8081
+      - DOCUMENT_SERVICE_URL=http://document-processor:8082
+      - AI_SERVICE_URL=http://ai-report-service:8083
+      - DOCTOR_ACCESS_URL=http://doctor-access-service:8084
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+      - RUST_LOG=info
+    depends_on:
+      - postgres
+      - redis
+      - nats
+    networks:
+      - health-os-network
+
+  # Timeline Service
+  timeline-service:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile.timeline-service
+    container_name: health-os-timeline-service
+    ports:
+      - "8081:8081"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/health_os
+      - NATS_URL=nats://nats:4222
+      - RUST_LOG=info
+    depends_on:
+      - postgres
+      - nats
+    networks:
+      - health-os-network
+
+  # Document Processor Service
+  document-processor:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile.document-processor
+    container_name: health-os-document-processor
+    ports:
+      - "8082:8082"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/health_os
+      - NATS_URL=nats://nats:4222
+      - STORAGE_TYPE=local
+      - STORAGE_PATH=/app/storage
+      - RUST_LOG=info
+    volumes:
+      - document_storage:/app/storage
+    depends_on:
+      - postgres
+      - nats
+    networks:
+      - health-os-network
+
+  # AI Report Service
+  ai-report-service:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile.ai-report-service
+    container_name: health-os-ai-report-service
+    ports:
+      - "8083:8083"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/health_os
+      - NATS_URL=nats://nats:4222
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OLLAMA_URL=http://ollama:11434
+      - RUST_LOG=info
+    depends_on:
+      - postgres
+      - nats
+    networks:
+      - health-os-network
+
+  # Doctor Access Service
+  doctor-access-service:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile.doctor-access-service
+    container_name: health-os-doctor-access-service
+    ports:
+      - "8084:8084"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/health_os
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - RUST_LOG=info
+    depends_on:
+      - postgres
+    networks:
+      - health-os-network
+
+  # Optional: Ollama for local AI models
+  ollama:
+    image: ollama/ollama:latest
+    container_name: health-os-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - health-os-network
+    profiles:
+      - ai
+
+  # Optional: Jaeger for tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: health-os-jaeger
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # HTTP collector
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - health-os-network
+    profiles:
+      - observability
+
+volumes:
+  postgres_data:
+  document_storage:
+  ollama_data:
+
+networks:
+  health-os-network:
+    driver: bridge
