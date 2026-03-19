@@ -1,0 +1,39 @@
+{
+  "name": "health-os-doctor-web",
+  "version": "1.0.0",
+  "description": "Health OS Doctor Web Viewer",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "13.4.19",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "typescript": "5.1.6",
+    "@types/node": "20.4.5",
+    "@types/react": "18.2.17",
+    "@types/react-dom": "18.2.7",
+    "tailwindcss": "3.3.3",
+    "autoprefixer": "10.4.14",
+    "postcss": "8.4.27",
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "clsx": "^2.0.0",
+    "axios": "^1.4.0",
+    "date-fns": "^2.30.0",
+    "recharts": "^2.7.2",
+    "react-qrcode-reader": "^3.0.0-beta-1",
+    "react-query": "^3.39.3",
+    "react-hook-form": "^7.45.4",
+    "react-hot-toast": "^2.4.1"
+  },
+  "devDependencies": {
+    "eslint": "8.45.0",
+    "eslint-config-next": "13.4.19",
+    "@types/react-query": "^3.39.3"
+  }
+}

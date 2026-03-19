@@ -3,7 +3,7 @@ use event_model::{MedicalEvent, EventType, Result, EventError};
 use std::collections::HashMap;
 use uuid::Uuid;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Timeline {
     pub patient_id: Uuid,
     pub events: Vec<MedicalEvent>,

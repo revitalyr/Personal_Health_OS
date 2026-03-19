@@ -1,0 +1,30 @@
+warning: virtual workspace defaulting to `resolver = "1"` despite one or more workspace members being on edition 2021 which implies `resolver = "2"`
+  |
+  = note: to keep the current resolver, specify `workspace.resolver = "1"` in the workspace root's manifest
+  = note: to use the edition 2021 resolver, specify `workspace.resolver = "2"` in the workspace root's manifest
+  = note: for more details see https://doc.rust-lang.org/cargo/reference/resolver.html#resolver-versions
+    Blocking waiting for file lock on artifact directory
+   Compiling health-os-demo v0.1.0 (Z:\Projects\Personal_Health_OS_Development\demo)
+error[E0382]: borrow of moved value: `documents_vec`
+   --> demo\main.rs:148:18
+    |
+131 |     let documents_vec: Vec<Document> = state
+    |         ------------- move occurs because `documents_vec` has type `Vec<Document>`, which does not implement the `Copy` trait
+...
+147 |         "documents": documents_vec.into_iter().take(limit).collect::<Vec<_>>(),
+    |                                    ----------- `documents_vec` moved due to this method call
+148 |         "total": documents_vec.len(),
+    |                  ^^^^^^^^^^^^^ value borrowed here after move
+    |
+note: `into_iter` takes ownership of the receiver `self`, which moves `documents_vec`
+   --> C:\Users\revit\.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib/rustlib/src/rust\library\core\src\iter\traits\collect.rs:310:18
+    |
+310 |     fn into_iter(self) -> Self::IntoIter;
+    |                  ^^^^
+help: you can `clone` the value and consume it, but this might not be your desired behavior
+    |
+147 |         "documents": documents_vec.clone().into_iter().take(limit).collect::<Vec<_>>(),
+    |                                   ++++++++
+
+For more information about this error, try `rustc --explain E0382`.
+error: could not compile `health-os-demo` (bin "demo") due to 1 previous error

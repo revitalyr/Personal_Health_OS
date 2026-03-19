@@ -1,3 +1,12 @@
+pub mod models;
+pub mod service;
+pub mod error;
+
+pub use models::*;
+pub use service::*;
+pub use error::*;
+
+// Legacy compatibility
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};

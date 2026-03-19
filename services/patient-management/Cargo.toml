@@ -1,5 +1,5 @@
 [package]
-name = "document-processor"
+name = "patient-management"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -18,25 +18,17 @@ tracing = { workspace = true }
 config = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
-async-nats = { workspace = true }
 
-# Document processing (simplified for demo)
-# tesseract = "0.13"
-# image = "0.24"
-# pdf = "0.8"
-# dicom-rs = "0.6"  # Temporarily commented out
-
-# File handling
-mime = "0.3"
-mime_guess = "2.0"
-tempfile = "3.8"
-
-# Storage & Database
+# Database
 sqlx = { workspace = true }
-# aws-sdk-s3 = "1.0"
-# aws-config = "1.0"  # Temporarily commented out
+redis = { workspace = true }
+
+# Validation
+validator = { version = "0.16", features = ["derive"] }
+regex = "1.9"
 
 # Internal crates
+auth = { path = "../../crates/auth" }
+telemetry = { path = "../../crates/telemetry" }
 event-model = { path = "../../crates/event-model" }
 storage = { path = "../../crates/storage" }
-telemetry = { path = "../../crates/telemetry" }

@@ -19,6 +19,18 @@ config = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 
+# Authentication
+jsonwebtoken = "0.17"
+bcrypt = "0.15"
+oauth2 = "4.4"
+reqwest = { version = "0.11", features = ["json"] }
+phone-number = "0.3"
+rand = "0.8"
+
+# Database
+sqlx = { workspace = true }
+redis = { workspace = true }
+
 # Internal crates
 auth = { path = "../../crates/auth" }
 telemetry = { path = "../../crates/telemetry" }

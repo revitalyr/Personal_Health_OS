@@ -1,0 +1,52 @@
+[package]
+name = "health-os-hms-desktop"
+version = "1.0.0"
+description = "Hospital Management System Desktop Application"
+authors = ["Health OS Team"]
+license = "MIT"
+repository = "https://github.com/health-os/hms-desktop"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "1.4", features = [] }
+
+[dependencies]
+tauri = { version = "1.4", features = ["shell-open", "dialog", "fs-all", "http-all"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.11", features = ["json"] }
+uuid = { version = "1.4", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+sha2 = "0.10"
+rsa = "0.9"
+base64 = "0.21"
+hex = "0.4"
+rand = "0.8"
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Frontend dependencies (will be bundled)
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  "console",
+  "Document",
+  "Element",
+  "HtmlElement",
+  "Window",
+]
+
+[[bin]]
+name = "health-os-hms"
+path = "src/main.rs"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
+
+[profile.release.package."*"]
+opt-level = 3

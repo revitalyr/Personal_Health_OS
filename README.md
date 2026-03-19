@@ -1,44 +1,77 @@
-# Health OS Backend
+# Health OS - Complete Healthcare Management Platform
 
-High-performance event-driven backend for medical timeline systems written in Rust.
+A comprehensive healthcare management platform combining personal health tracking, hospital management systems, and cross-platform applications with enterprise-grade security and licence management.
 
 ## Overview
 
-Health OS is a comprehensive personal health operating system that helps patients and families organize, track, and present their medical history through a conversational AI-powered experience. This backend provides the core infrastructure for:
+Health OS is a unified healthcare platform that provides:
 
+### 🏥 **Personal Health OS**
 - **Event-sourced medical records** with timeline reconstruction
 - **Document processing pipeline** with OCR and medical entity extraction  
 - **AI-generated doctor reports** for consultation summaries
 - **Secure QR-based doctor access** with temporary tokens
 - **Real-time timeline aggregation** and anomaly detection
+- **Multi-provider authentication** (Email, Google, Apple, Phone+OTP)
+- **Mobile apps** for iOS and Android with offline support
+
+### 🏥 **Hospital Management System**
+- **Electronic Medical Records (EMR)** with complete patient workflows
+- **Appointment scheduling** with shared calendars and automated reminders
+- **Billing & invoicing** with multi-payer support and financial reporting
+- **Licence management** with RSA encryption and hardware fingerprinting
+- **Cross-platform applications** for desktop and mobile devices
+- **Real-time API integration** with comprehensive security
 
 ## Architecture
 
-```
-Mobile App
-     │
-     ▼
- API Gateway (Rust)
-     │
-     ▼
- Event Bus (NATS)
-     │
- ┌───┼─────────────┬──────────┐
- ▼   ▼             ▼          ▼
-Timeline   Document Proc   AI Report
-Service      Workers        Service
-     │
-     ▼
- PostgreSQL
-```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Complete Platform Architecture                │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Mobile Apps  │    │  Desktop App    │    │   Web Portal    │
+│  (React Native) │    │   (Tauri)      │    │  (Next.js)      │
+└─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
+          │                      │                      │
+          └──────────────────────┼──────────────────────┘
+                                 │
+          ┌─────────────────────────────────────────────┐
+          │            API Gateway (Port 8080)         │
+          │  + Licence Verification Middleware           │
+          └─────────────────────┬───────────────────────┘
+                                │
+          ┌─────────────────────────────────────────────┐
+          │            Event Bus (NATS)                │
+          └─────────────────────┬───────────────────────┘
+                                │
+    ┌───────────┬───────────┬───────────┬───────────┬───────────┬───────────┐
+    ▼           ▼           ▼           ▼           ▼           ▼
+┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
+│Patient  │ │Timeline  │ │Document │ │ AI      │ │Doctor   │ │Licence  │
+│Service  │ │Service   │ │Processor│ │Service  │ │Access   │ │Service  │
+│(8085)   │ │(8081)   │ │(8082)   │ │(8083)   │ │(8084)   │ │(8088)   │
+└─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘
+    │           │           │           │           │           │
+    ▼           ▼           ▼           ▼           ▼           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              PostgreSQL + Redis + Storage                │
+└─────────────────────────────────────────────────────────────────┘
 
 ### Services
 
+#### Personal Health OS Services
 - **API Gateway** (Port 8080) - Authentication, routing, and external API
 - **Timeline Service** (Port 8081) - Event aggregation and timeline building
 - **Document Processor** (Port 8082) - OCR and medical entity extraction
 - **AI Report Service** (Port 8083) - LLM-powered medical summaries
 - **Doctor Access Service** (Port 8084) - QR code generation and secure access
+
+#### Hospital Management Services
+- **Patient Management Service** (Port 8085) - EMR and patient workflows
+- **Appointment Scheduling Service** (Port 8086) - Calendar and reminders
+- **Billing & Invoicing Service** (Port 8087) - Financial management
+- **Licence Management Service** (Port 8088) - Licence verification and CRM
 
 ### Shared Crates
 
@@ -50,15 +83,30 @@ Service      Workers        Service
 
 ## Features
 
-### 🏥 Medical Event Management
-- Event-sourced architecture with immutable medical events
-- Support for symptoms, medications, lab results, doctor visits, diagnoses
-- Automatic timeline reconstruction with O(n log n) sorting
-- Duplicate detection and anomaly identification
+### 🏥 Personal Health OS Features
+- **Multi-provider Authentication**: Email, Google, Apple, Phone+OTP with JWT tokens
+- **Event-sourced Medical Records**: Immutable events with timeline reconstruction
+- **Document Processing**: OCR, DICOM support, and medical entity extraction
+- **AI-powered Reports**: LLM integration for medical summaries
+- **Secure Doctor Access**: QR codes with time-limited tokens
+- **Mobile Applications**: Cross-platform React Native apps for iOS/Android
+- **Real-time Timeline**: O(n log n) sorting with anomaly detection
+- **Multi-profile Support**: Family health management
+
+### 🏥 Hospital Management Features
+- **Electronic Medical Records (EMR)**: Complete patient workflows
+- **Appointment Scheduling**: Shared calendars with automated reminders
+- **Billing & Invoicing**: Multi-payer support with financial reporting
+- **Licence Management**: RSA encryption with hardware fingerprinting
+- **Desktop Application**: Tauri-based client with system tray
+- **Web Dashboard**: Browser-based CRM interface
+- **Cross-platform Support**: Windows, macOS, Linux, iOS, Android
+- **Real-time API**: Sub-100ms response times
+- **Offline Support**: Local storage with synchronization
 
 ### 📄 Comprehensive Document Processing
 - **Multi-format support**: PDF, images, DICOM, DOC, DOCX
-- **Advanced OCR**: Tesseract integration with Russian/English support
+- **Advanced OCR**: Tesseract integration with multi-language support
 - **Medical entity extraction**: Automatic identification of medications, symptoms, lab values
 - **DICOM processing**: Full support for medical imaging with metadata extraction
 - **Batch processing**: Handle multiple documents simultaneously
@@ -73,38 +121,42 @@ Service      Workers        Service
 - **Voice input**: Future support for symptom description (planned)
 
 ### 🤖 AI-Powered Reports
-- LLM integration (OpenAI, Ollama, local models)
-- Context-aware medical summaries
-- Doctor-friendly report generation
-- RAG (Retrieval-Augmented Generation) for document insights
+- **LLM integration**: OpenAI, Ollama, local models support
+- **Context-aware medical summaries**: Doctor-friendly report generation
+- **RAG capabilities**: Retrieval-Augmented Generation for document insights
+- **Multi-language support**: Reports in multiple languages
 
-### 🔐 Secure Doctor Access
-- Time-limited access tokens (15 minutes default)
-- QR code generation for easy sharing
-- Read-only access with audit logging
-- HIPAA/GDPR compliant security measures
+### 🔐 Enterprise Security & Licensing
+- **RSA-2048 encryption**: Secure licence key generation
+- **Hardware fingerprinting**: Prevent licence sharing
+- **Online validation**: Real-time licence verification
+- **Role-based access control**: Comprehensive permission system
+- **HIPAA/GDPR compliance**: Enterprise-grade security measures
+- **Audit logging**: Complete activity tracking
 
-### 📊 Performance & Observability
-- Sub-30ms timeline reconstruction for 1M events
-- OpenTelemetry tracing with Jaeger
-- Prometheus metrics and Grafana dashboards
-- Graceful shutdown and health checks
+### 📊 Performance & Analytics
+- **Sub-100ms API response**: Optimized query performance
+- **Real-time synchronization**: Live data updates across platforms
+- **Advanced analytics**: Patient, financial, and operational insights
+- **Custom reporting**: Flexible report generation
+- **Usage tracking**: Comprehensive licence and system analytics
 
 ## Quick Start
 
 ### Prerequisites
 
-- Rust 1.75+
-- Docker & Docker Compose
-- PostgreSQL 15+
-- Redis 7+
+- **Rust 1.75+** - For backend services
+- **Node.js 18+** - For desktop and web applications
+- **Docker & Docker Compose** - For infrastructure
+- **PostgreSQL 15+** - Primary database
+- **Redis 7+** - Caching and session storage
 
 ### Development Setup
 
 1. **Clone and setup**
 ```bash
-git clone <repository-url>
-cd health-os-backend
+git clone https://github.com/revitalyr/Personal_Health_OS.git
+cd Personal_Health_OS
 ```
 
 2. **Start infrastructure**
@@ -112,21 +164,42 @@ cd health-os-backend
 docker-compose up postgres redis nats -d
 ```
 
-3. **Run migrations**
+3. **Run database migrations**
 ```bash
 # Install sqlx-cli first
 cargo install sqlx-cli --no-default-features --features postgres
+
+# Run all migrations
 sqlx migrate run --database-url "postgres://postgres:postgres@localhost:5432/health_os"
 ```
 
-4. **Start services**
+4. **Start backend services**
 ```bash
-# Start all services
+# Personal Health OS Services
 cargo run --package api-gateway &
 cargo run --package timeline-service &
 cargo run --package document-processor &
 cargo run --package ai-report-service &
 cargo run --package doctor-access-service &
+
+# Hospital Management Services
+cargo run --package patient-management &
+cargo run --package appointment-scheduling &
+cargo run --package billing-invoicing &
+cargo run --package licence-management &
+```
+
+5. **Start applications**
+```bash
+# Desktop Application
+cd desktop && cargo tauri dev
+
+# Mobile Applications (requires React Native environment)
+cd mobile && npm install && npx react-native run-android
+cd mobile && npm install && npx react-native run-ios
+
+# Web Applications
+cd web/doctor && npm install && npm run dev
 ```
 
 ### Docker Development
