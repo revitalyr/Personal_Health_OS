@@ -24,16 +24,13 @@ sqlx = { workspace = true }
 redis = { workspace = true }
 
 # PDF generation
-lopdf = { version = "0.32", features = ["embed_images"] }
+lopdf = { version = "0.32", features = ["embed_image"] }
 
 # Email
 lettre = "0.11"
 
 # Validation
 validator = { version = "0.16", features = ["derive"] }
-
-# Payment processing
-stripe = "0.22"
 
 # Internal crates
 auth = { path = "../../crates/auth" }

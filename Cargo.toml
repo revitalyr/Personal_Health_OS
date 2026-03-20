@@ -4,10 +4,12 @@ members = [
     "services/*",
     "demo"
 ]
+resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.75"
 authors = ["Health OS Team"]
 license = "MIT"
 homepage = "https://github.com/health-os/backend"
@@ -30,4 +32,28 @@ anyhow = "1.0"
 async-nats = "0.33"
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono"] }
 criterion = { version = "0.5", features = ["html_reports"] }
-jsonwebtoken = "9.3"
+jsonwebtoken = "10.3"
+
+# Modern additions
+validator = { version = "0.18", features = ["derive"] }
+regex = "1.10"
+rayon = "1.8"
+crossbeam = "0.8"
+parking_lot = "0.12"
+once_cell = "1.19"
+async-trait = "0.1"
+proptest = "1.4"
+mockall = "0.12"
+
+# Performance and optimization
+tokio-util = "0.7"
+futures = "0.3"
+bytes = "1.5"
+
+# Additional web utilities
+reqwest = { version = "0.11", features = ["json"] }
+http = "1.0"
+hyper = { version = "1.0", features = ["full"] }
+
+# Database and caching
+redis = "0.24"

@@ -24,11 +24,23 @@ sqlx = { workspace = true }
 redis = { workspace = true }
 
 # Validation
-validator = { version = "0.16", features = ["derive"] }
-regex = "1.9"
+validator = { workspace = true }
+regex = { workspace = true }
+
+# Performance
+rayon = { workspace = true }
+parking_lot = { workspace = true }
+
+# Testing
+proptest = { workspace = true }
+mockall = { workspace = true }
 
 # Internal crates
 auth = { path = "../../crates/auth" }
 telemetry = { path = "../../crates/telemetry" }
 event-model = { path = "../../crates/event-model" }
 storage = { path = "../../crates/storage" }
+
+[dev-dependencies]
+criterion = { workspace = true }
+tokio-test = "0.4"

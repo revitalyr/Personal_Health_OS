@@ -1,9 +1,10 @@
 use crate::models::*;
-use crate::error::PatientError;
+use crate::error::{PatientError, Result};
 use sqlx::PgPool;
 use uuid::Uuid;
 use chrono::{DateTime, Utc, NaiveDate};
 use serde_json::json;
+use validator::Validate;
 
 pub struct PatientService {
     db: PgPool,
@@ -15,7 +16,17 @@ impl PatientService {
     }
 
     // Patient Management
-    pub async fn create_patient(&self, request: CreatePatientRequest) -> Result<HospitalPatient, PatientError> {
+    pub async fn create_patient(&self, request: CreatePatientRequest) -> Result<HospitalPatient> {
+        // Validate request
+        request.validate()
+            .map_err(PatientError::from)?;
+        
+        // Check if patient ID already exists
+        if self.patient_id_exists(&request.patient_id).await? {
+            return Err(PatientError::PatientIdExists(request.patient_id));
+        }
+        
+        let now = Utc::now();
         let patient = sqlx::query_as!(
             HospitalPatient,
             r#"
@@ -37,8 +48,8 @@ impl PatientService {
             request.emergency_contact_phone,
             request.insurance_provider,
             request.insurance_policy_number,
-            Utc::now(),
-            Utc::now()
+            now,
+            now
         )
         .fetch_one(&self.db)
         .await?;
@@ -52,7 +63,7 @@ impl PatientService {
         Ok(patient)
     }
 
-    pub async fn get_patient(&self, patient_id: Uuid) -> Result<HospitalPatient, PatientError> {
+    pub async fn get_patient(&self, patient_id: PatientId) -> Result<HospitalPatient> {
         sqlx::query_as!(
             HospitalPatient,
             r#"
@@ -68,10 +79,10 @@ impl PatientService {
         )
         .fetch_optional(&self.db)
         .await?
-        .ok_or(PatientError::PatientNotFound)
+        .ok_or(PatientError::PatientNotFound(patient_id))
     }
 
-    pub async fn get_patient_by_patient_id(&self, patient_id: &str) -> Result<HospitalPatient, PatientError> {
+    pub async fn get_patient_by_patient_id(&self, patient_id: &ExternalPatientCode) -> Result<HospitalPatient> {
         sqlx::query_as!(
             HospitalPatient,
             r#"
@@ -83,14 +94,18 @@ impl PatientService {
             FROM hospital_patients
             WHERE patient_id = $1
             "#,
-            patient_id
+            patient_id.to_string()
         )
         .fetch_optional(&self.db)
         .await?
-        .ok_or(PatientError::PatientNotFound)
+        .ok_or(PatientError::PatientNotFound(PatientId::from(Uuid::new_v4()))) // TODO: Get actual ID
     }
 
-    pub async fn update_patient(&self, patient_id: Uuid, request: UpdatePatientRequest) -> Result<HospitalPatient, PatientError> {
+    pub async fn update_patient(&self, patient_id: PatientId, request: UpdatePatientRequest) -> Result<HospitalPatient> {
+        // Validate request
+        request.validate()
+            .map_err(PatientError::from)?;
+        
         let patient = sqlx::query_as!(
             HospitalPatient,
             r#"
@@ -496,9 +511,9 @@ impl PatientService {
 
         let mut events = Vec::new();
 
-        // Convert encounters to timeline events
-        for encounter in encounters {
-            events.push(TimelineEvent {
+        // Convert encounters to timeline events using iterators
+        let encounter_events: Vec<TimelineEvent> = encounters.into_iter().map(|encounter| {
+            TimelineEvent {
                 id: encounter.id,
                 event_type: format!("medical_encounter_{}", match encounter.encounter_type {
                     crate::models::EncounterType::Admission => "admission",
@@ -509,54 +524,67 @@ impl PatientService {
                     crate::models::EncounterType::FollowUp => "follow_up",
                     crate::models::EncounterType::Discharge => "discharge",
                 }),
-                timestamp: encounter.start_time,
-                description: encounter.diagnosis.unwrap_or_else(|| "Medical encounter".to_string()),
+                timestamp: encounter.start_time.into(),
+                description: encounter.diagnosis
+                    .unwrap_or_else(|| Notes::from("Medical encounter".to_string())),
                 metadata: json!({
                     "type": encounter.encounter_type,
                     "notes": encounter.notes
                 }),
-            });
-        }
+            }
+        }).collect();
+        events.extend(encounter_events);
 
-        // Convert vitals to timeline events
-        for vital in vitals {
-            events.push(TimelineEvent {
+        // Convert vitals to timeline events using iterators
+        let vital_events: Vec<TimelineEvent> = vitals.into_iter().map(|vital| {
+            let systolic = vital.blood_pressure_systolic.unwrap_or(SystolicPressure(0));
+            let diastolic = vital.blood_pressure_diastolic.unwrap_or(DiastolicPressure(0));
+            let heart_rate = vital.heart_rate.unwrap_or(HeartRate(0));
+            let temperature = vital.temperature.unwrap_or(BodyTemperature(0.0));
+            
+            TimelineEvent {
                 id: vital.id,
                 event_type: "vitals_recorded".to_string(),
-                timestamp: vital.recorded_at,
-                description: format!("Vitals recorded: BP {}/{} HR {} T {}°C",
-                    vital.blood_pressure_systolic.unwrap_or(0),
-                    vital.blood_pressure_diastolic.unwrap_or(0),
-                    vital.heart_rate.unwrap_or(0),
-                    vital.temperature.unwrap_or(0.0)
-                ),
+                timestamp: vital.recorded_at.into(),
+                description: Notes::from(format!("Vitals recorded: BP {}/{} HR {} T {}°C",
+                    systolic.0,
+                    diastolic.0,
+                    heart_rate.0,
+                    temperature.0
+                )),
                 metadata: json!({
-                    "blood_pressure_systolic": vital.blood_pressure_systolic,
-                    "blood_pressure_diastolic": vital.blood_pressure_diastolic,
-                    "heart_rate": vital.heart_rate,
-                    "temperature": vital.temperature
+                    "systolic": systolic.0,
+                    "diastolic": diastolic.0,
+                    "heart_rate": heart_rate.0,
+                    "temperature": temperature.0,
+                    "weight": vital.weight.map(|w| w.0),
+                    "height": vital.height.map(|h| h.0),
+                    "oxygen_saturation": vital.oxygen_saturation.map(|o| o.0)
                 }),
-            });
-        }
-
-        // Convert medications to timeline events
-        for medication in medications {
-            events.push(TimelineEvent {
+            }
+        }).collect();
+        events.extend(vital_events);
+        // Convert medications to timeline events using iterators
+        let medication_events: Vec<TimelineEvent> = medications.into_iter().map(|medication| {
+            TimelineEvent {
                 id: medication.id,
                 event_type: "medication_prescribed".to_string(),
-                timestamp: medication.created_at,
-                description: format!("Medication prescribed: {} ({})", 
-                    medication.medication_name, 
-                    medication.dosage
-                ),
+                timestamp: medication.created_at.into(),
+                description: Notes::from(format!("Medication prescribed: {} ({})", 
+                    medication.medication_name.0, 
+                    medication.dosage.0
+                )),
                 metadata: json!({
-                    "medication_name": medication.medication_name,
-                    "dosage": medication.dosage
+                    "medication_name": medication.medication_name.0,
+                    "dosage": medication.dosage.0,
+                    "frequency": medication.frequency.0,
+                    "route": medication.route
                 }),
-            });
-        }
+            }
+        }).collect();
+        events.extend(medication_events);
 
-        // Sort by timestamp
+        // Sort by timestamp using iterator
         events.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
 
         Ok(PatientTimelineResponse {
@@ -566,7 +594,18 @@ impl PatientService {
     }
 
     // Helper methods
-    async fn log_patient_event(&self, patient_id: Uuid, event_type: &str, metadata: serde_json::Value) -> Result<(), PatientError> {
+    async fn patient_id_exists(&self, patient_id: &ExternalPatientCode) -> Result<bool> {
+        let count: i64 = sqlx::query_scalar!(
+            "SELECT COUNT(*) FROM hospital_patients WHERE patient_id = $1",
+            patient_id.to_string()
+        )
+        .fetch_one(&self.db)
+        .await?;
+        
+        Ok(count > 0)
+    }
+
+    async fn log_patient_event(&self, patient_id: PatientId, event_type: &str, metadata: serde_json::Value) -> Result<()> {
         sqlx::query!(
             r#"
             INSERT INTO patient_events (patient_id, event_type, metadata, created_at)
