@@ -2,6 +2,7 @@
 // This demonstrates how semantic types improve readability and type safety
 
 use crate::semantic_types::*;
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 /// Hospital patient with semantic type aliases for improved readability
@@ -56,7 +57,7 @@ impl HospitalPatient {
         Self {
             id: new_patient_id(),
             profile_id,
-            patient_id: ExternalPatientCode(patient_id),
+            patient_id: patient_id.into(),
             blood_type: None,
             emergency_contact_name: None,
             emergency_contact_phone: None,
@@ -154,7 +155,7 @@ impl HospitalPatient {
     
     /// Get length of stay in days (if admitted)
     pub fn length_of_stay_days(&self) -> Option<i64> {
-        match (self.admission_date, self.discharge_date) {
+        match (self.admission_date.clone(), self.discharge_date.clone()) {
             (Some(admission), Some(discharge)) => {
                 let duration = discharge.value().signed_duration_since(admission.value());
                 Some(duration.num_days())
@@ -189,7 +190,7 @@ mod tests {
     fn test_patient_admission() {
         let mut patient = HospitalPatient::new(
             ProfileId::new_v4(),
-            ExternalPatientCode("P12345".to_string()),
+            ExternalPatientCode("P12345".to_string().into()),
         );
         
         // Admit patient
@@ -206,7 +207,7 @@ mod tests {
     fn test_patient_discharge() {
         let mut patient = HospitalPatient::new(
             ProfileId::new_v4(),
-            ExternalPatientCode("P12345".to_string()),
+            ExternalPatientCode("P12345".to_string().into()),
         );
         
         // Try to discharge without admission
@@ -223,7 +224,7 @@ mod tests {
     fn test_emergency_contact() {
         let mut patient = HospitalPatient::new(
             ProfileId::new_v4(),
-            ExternalPatientCode("P12345".to_string()),
+            ExternalPatientCode("P12345".to_string().into()),
         );
         
         // Set valid emergency contact
@@ -239,7 +240,7 @@ mod tests {
     fn test_insurance() {
         let mut patient = HospitalPatient::new(
             ProfileId::new_v4(),
-            ExternalPatientCode("P12345".to_string()),
+            ExternalPatientCode("P12345".to_string().into()),
         );
         
         // Set valid insurance
@@ -255,7 +256,7 @@ mod tests {
     fn test_length_of_stay() {
         let mut patient = HospitalPatient::new(
             ProfileId::new_v4(),
-            ExternalPatientCode("P12345".to_string()),
+            ExternalPatientCode("P12345".to_string().into()),
         );
         
         // No stay yet

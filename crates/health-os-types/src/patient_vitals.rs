@@ -3,6 +3,7 @@
 
 use crate::semantic_types::*;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// Patient vitals with semantic type aliases for medical measurements
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -131,7 +132,7 @@ impl PatientVitals {
     
     /// Get blood pressure as formatted string
     pub fn get_blood_pressure_display(&self) -> Option<String> {
-        match (self.blood_pressure_systolic, self.blood_pressure_diastolic) {
+        match (self.blood_pressure_systolic.clone(), self.blood_pressure_diastolic.clone()) {
             (Some(systolic), Some(diastolic)) => {
                 Some(format!("{}/{}", systolic.value(), diastolic.value()))
             }
@@ -141,7 +142,7 @@ impl PatientVitals {
     
     /// Calculate BMI if weight and height are available
     pub fn calculate_bmi(&self) -> Option<f32> {
-        match (self.weight, self.height) {
+        match (self.weight.clone(), self.height.clone()) {
             (Some(weight), Some(height)) => {
                 let weight_kg = weight.value();
                 let height_m = height.value() / 100.0;
@@ -165,11 +166,11 @@ impl PatientVitals {
     
     /// Check if blood pressure is normal
     pub fn is_blood_pressure_normal(&self) -> Option<bool> {
-        match (self.blood_pressure_systolic, self.blood_pressure_diastolic) {
+        match (self.blood_pressure_systolic.clone(), self.blood_pressure_diastolic.clone()) {
             (Some(systolic), Some(diastolic)) => {
                 let sys = systolic.value();
                 let dia = diastolic.value();
-                Some(sys < 120 && dia < 80)
+                Some(sys <= 120 && dia <= 80)
             }
             _ => None,
         }
@@ -177,7 +178,7 @@ impl PatientVitals {
     
     /// Check if heart rate is normal (for adults)
     pub fn is_heart_rate_normal(&self) -> Option<bool> {
-        self.heart_rate.map(|rate| {
+        self.heart_rate.clone().map(|rate| {
             let rate_val = rate.value();
             rate_val >= 60 && rate_val <= 100
         })
@@ -185,7 +186,7 @@ impl PatientVitals {
     
     /// Check if temperature is normal
     pub fn is_temperature_normal(&self) -> Option<bool> {
-        self.temperature.map(|temp| {
+        self.temperature.clone().map(|temp| {
             let temp_val = temp.value();
             temp_val >= 36.1 && temp_val <= 37.2
         })
@@ -193,18 +194,18 @@ impl PatientVitals {
     
     /// Check if oxygen saturation is normal
     pub fn is_oxygen_saturation_normal(&self) -> Option<bool> {
-        self.oxygen_saturation.map(|sat| sat.value() >= 95.0)
+        self.oxygen_saturation.clone().map(|sat| sat.value() >= 95.0)
     }
     
     /// Get all available measurements as a summary
     pub fn get_measurements_summary(&self) -> VitalsSummary {
         VitalsSummary {
             blood_pressure: self.get_blood_pressure_display(),
-            heart_rate: self.heart_rate.map(|hr| hr.value().to_string()),
-            temperature: self.temperature.map(|t| format!("{:.1}°C", t.value())),
-            weight: self.weight.map(|w| format!("{:.1} kg", w.value())),
-            height: self.height.map(|h| format!("{:.1} cm", h.value())),
-            oxygen_saturation: self.oxygen_saturation.map(|o| format!("{:.1}%", o.value())),
+            heart_rate: self.heart_rate.clone().map(|hr| hr.value().to_string()),
+            temperature: self.temperature.clone().map(|t| format!("{:.1}°C", t.value())),
+            weight: self.weight.clone().map(|w| format!("{:.1} kg", w.value())),
+            height: self.height.clone().map(|h| format!("{:.1} cm", h.value())),
+            oxygen_saturation: self.oxygen_saturation.clone().map(|o| format!("{:.1}%", o.value())),
             bmi: self.calculate_bmi().map(|bmi| format!("{:.1}", bmi)),
             bmi_category: self.get_bmi_category().map(|s| s.to_string()),
         }

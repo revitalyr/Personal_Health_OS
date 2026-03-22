@@ -5,6 +5,7 @@ use health_os_types::*;
 
 #[cfg(test)]
 mod standalone_tests {
+    use chrono::Utc;
     use super::*;
 
     #[test]
@@ -260,10 +261,20 @@ mod standalone_tests {
         assert!((bmi.unwrap() - expected_bmi).abs() < 0.1);
         
         // Check normal ranges
-        assert_eq!(vitals.is_blood_pressure_normal(), Some(true));
-        assert_eq!(vitals.is_heart_rate_normal(), Some(true));
-        assert_eq!(vitals.is_temperature_normal(), Some(true));
-        assert_eq!(vitals.is_oxygen_saturation_normal(), Some(true));
+        let bp_normal = vitals.is_blood_pressure_normal();
+        let hr_normal = vitals.is_heart_rate_normal();
+        let temp_normal = vitals.is_temperature_normal();
+        let o2_normal = vitals.is_oxygen_saturation_normal();
+        
+        println!("Blood pressure normal: {:?}", bp_normal);
+        println!("Heart rate normal: {:?}", hr_normal);
+        println!("Temperature normal: {:?}", temp_normal);
+        println!("O2 saturation normal: {:?}", o2_normal);
+        
+        assert_eq!(bp_normal, Some(true));
+        assert_eq!(hr_normal, Some(true));
+        assert_eq!(temp_normal, Some(true));
+        assert_eq!(o2_normal, Some(true));
     }
 
     #[test]
@@ -306,13 +317,13 @@ mod standalone_tests {
         
         // Test emergency actions
         let mild_actions = mild.get_emergency_actions();
-        assert!(mild_actions.contains(&"Monitor for symptoms"));
+        assert!(mild_actions.iter().any(|s| s == "Monitor for symptoms"));
         
         let severe_actions = allergy.get_emergency_actions();
-        assert!(severe_actions.contains(&"Call emergency services"));
+        assert!(severe_actions.iter().any(|s| s == "Call emergency services immediately"));
         
         let lt_actions = life_threatening.get_emergency_actions();
-        assert!(lt_actions.contains(&"EMERGENCY: Call 911 immediately"));
+        assert!(lt_actions.iter().any(|s| s == "EMERGENCY: Call 911 immediately"));
     }
 
     #[test]
@@ -517,13 +528,13 @@ mod standalone_tests {
     #[test]
     fn test_error_handling_consistency() {
         // Test that all semantic types provide consistent error handling
-        let test_cases = vec![
-            || ContactName::new(""),
-            || PhoneNumber::new("123"),
-            || SystolicPressure::new(300),
-            || BodyTemperature::new(50.0),
-            || WeightKg::new(1000.0),
-            || Diagnosis::new(&"A".repeat(1500)),
+        let test_cases: Vec<Box<dyn Fn() -> Result<(), &'static str>>> = vec![
+            Box::new(|| ContactName::new("").map(|_| ())),
+            Box::new(|| PhoneNumber::new("123").map(|_| ())),
+            Box::new(|| SystolicPressure::new(300).map(|_| ())),
+            Box::new(|| BodyTemperature::new(50.0).map(|_| ())),
+            Box::new(|| WeightKg::new(1000.0).map(|_| ())),
+            Box::new(|| Diagnosis::new(&"A".repeat(1500)).map(|_| ())),
         ];
         
         for test_case in test_cases {

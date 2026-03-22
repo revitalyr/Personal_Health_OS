@@ -3,6 +3,7 @@
 
 use crate::semantic_types::*;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// Patient allergy record with semantic type aliases
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -111,30 +112,30 @@ impl PatientAllergy {
     }
     
     /// Get emergency action recommendations
-    pub fn get_emergency_actions(&self) -> Vec<&'static str> {
+    pub fn get_emergency_actions(&self) -> Vec<String> {
         match self.severity {
             AllergySeverity::Mild => vec![
-                "Monitor for symptoms",
-                "Administer antihistamine if needed",
-                "Avoid allergen exposure"
+                "Monitor for symptoms".to_string(),
+                "Administer antihistamine if needed".to_string(),
+                "Avoid allergen exposure".to_string()
             ],
             AllergySeverity::Moderate => vec![
-                "Immediate medical attention recommended",
-                "Administer epinephrine if available",
-                "Call emergency services"
+                "Immediate medical attention recommended".to_string(),
+                "Administer epinephrine if available".to_string(),
+                "Call emergency services".to_string()
             ],
             AllergySeverity::Severe => vec![
-                "Call emergency services immediately",
-                "Administer epinephrine if available",
-                "Prepare for anaphylaxis treatment",
-                "Monitor airway and breathing"
+                "Call emergency services immediately".to_string(),
+                "Administer epinephrine if available".to_string(),
+                "Prepare for anaphylaxis treatment".to_string(),
+                "Monitor airway and breathing".to_string()
             ],
             AllergySeverity::LifeThreatening => vec![
-                "EMERGENCY: Call 911 immediately",
-                "Administer epinephrine immediately",
-                "Prepare for CPR if needed",
-                "Advanced life support required",
-                "Rush to emergency department"
+                "EMERGENCY: Call 911 immediately".to_string(),
+                "Administer epinephrine immediately".to_string(),
+                "Prepare for CPR if needed".to_string(),
+                "Advanced life support required".to_string(),
+                "Rush to emergency department".to_string()
             ],
         }
     }
@@ -142,11 +143,11 @@ impl PatientAllergy {
     /// Create a comprehensive allergy summary
     pub fn create_summary(&self) -> AllergySummary {
         AllergySummary {
-            allergen: self.allergen.as_string(),
+            allergen: self.allergen.as_str().to_string(),
             severity: self.severity_display().to_string(),
             category: format!("{:?}", self.get_allergy_category()),
-            reaction: self.reaction.as_ref().map(|r| r.as_string()),
-            notes: self.notes.as_ref().map(|n| n.as_string()),
+            reaction: self.reaction.as_ref().map(|r| r.as_str().to_string()),
+            notes: self.notes.as_ref().map(|n| n.as_str().to_string()),
             emergency_actions: self.get_emergency_actions(),
             is_severe: self.is_severe(),
             is_life_threatening: self.is_life_threatening(),
@@ -173,7 +174,7 @@ pub struct AllergySummary {
     pub category: String,
     pub reaction: Option<String>,
     pub notes: Option<String>,
-    pub emergency_actions: Vec<&'static str>,
+    pub emergency_actions: Vec<String>,
     pub is_severe: bool,
     pub is_life_threatening: bool,
     pub created_at: chrono::DateTime<chrono::Utc>,
@@ -324,8 +325,8 @@ mod tests {
             AllergySeverity::Mild,
         ).unwrap();
         let actions = mild.get_emergency_actions();
-        assert!(actions.contains(&"Monitor for symptoms"));
-        assert!(!actions.contains(&"Call emergency services"));
+        assert!(actions.contains(&"Monitor for symptoms".to_string()));
+        assert!(!actions.contains(&"Call emergency services".to_string()));
         
         let life_threatening = PatientAllergy::new(
             patient_id,
@@ -333,8 +334,8 @@ mod tests {
             AllergySeverity::LifeThreatening,
         ).unwrap();
         let actions = life_threatening.get_emergency_actions();
-        assert!(actions.contains(&"EMERGENCY: Call 911 immediately"));
-        assert!(actions.contains(&"Administer epinephrine immediately"));
+        assert!(actions.contains(&"EMERGENCY: Call 911 immediately".to_string()));
+        assert!(actions.contains(&"Administer epinephrine immediately".to_string()));
     }
     
     #[test]
@@ -355,6 +356,6 @@ mod tests {
         assert_eq!(summary.severity, "Moderate");
         assert_eq!(summary.reaction, Some("Skin rash, itching".to_string()));
         assert_eq!(summary.notes, Some("Avoid latex products, use alternative materials".to_string()));
-        assert!(summary.emergency_actions.contains(&"Immediate medical attention recommended"));
+        assert!(summary.emergency_actions.contains(&"Immediate medical attention recommended".to_string()));
     }
 }

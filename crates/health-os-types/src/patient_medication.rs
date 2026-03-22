@@ -4,6 +4,7 @@
 use crate::semantic_types::*;
 use serde::{Deserialize, Serialize};
 use chrono::NaiveDate;
+use uuid::Uuid;
 
 /// Patient medication record with semantic type aliases
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -99,7 +100,7 @@ impl PatientMedication {
     }
     
     /// Discontinue the medication
-    pub fn discontinue_medication(&mut self, reason: &str) -> Result<(), String> {
+    pub fn discontinue_medication(&mut self, _reason: &str) -> Result<(), String> {
         if self.medication_status == MedicationStatus::Discontinued {
             return Err("Medication is already discontinued".to_string());
         }
@@ -181,7 +182,7 @@ impl PatientMedication {
     
     /// Get duration of medication in days
     pub fn duration_days(&self) -> Option<i64> {
-        let end_date = match self.end_date {
+        let end_date = match &self.end_date {
             Some(end) => end.value(),
             None => chrono::Utc::now().date_naive(),
         };
@@ -224,13 +225,13 @@ impl PatientMedication {
     /// Create a comprehensive medication summary
     pub fn create_summary(&self) -> MedicationSummary {
         MedicationSummary {
-            medication_name: self.medication_name.as_string(),
-            dosage: self.dosage.as_string(),
-            frequency: self.frequency.as_string(),
+            medication_name: self.medication_name.as_str().to_string(),
+            dosage: self.dosage.as_str().to_string(),
+            frequency: self.frequency.as_str().to_string(),
             route: self.route_display().to_string(),
             status: self.status_display().to_string(),
             start_date: self.start_date.value(),
-            end_date: self.end_date.map(|d| d.value()),
+            end_date: self.end_date.clone().map(|d| d.value()),
             duration_days: self.duration_days(),
             requires_monitoring: self.requires_monitoring(),
             is_active: self.is_active(),
@@ -482,7 +483,7 @@ mod tests {
         let patient_id = PatientId::new_v4();
         let prescriber_id = PrescriberId::new_v4();
         let start_date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
-        let mut medication = PatientMedication::new(
+        let medication = PatientMedication::new(
             patient_id,
             "Metformin",
             "500mg",

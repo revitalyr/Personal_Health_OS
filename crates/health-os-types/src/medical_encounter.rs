@@ -2,6 +2,7 @@
 // This demonstrates how semantic types improve readability and type safety
 
 use crate::semantic_types::*;
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 /// Medical encounter with semantic type aliases
@@ -107,7 +108,7 @@ impl MedicalEncounter {
     
     /// Get duration of the encounter (if ended)
     pub fn duration(&self) -> Option<chrono::Duration> {
-        match self.end_time {
+        match &self.end_time {
             Some(end) => {
                 Some(end.value().signed_duration_since(self.start_time.value()))
             }

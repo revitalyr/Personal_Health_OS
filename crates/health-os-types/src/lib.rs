@@ -20,14 +20,13 @@ pub use {
 };
 
 // Simplified validation request types using semantic types
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use validator::Validate;
 
 /// Create patient request with semantic type validation
 #[derive(Debug, Deserialize, Validate)]
 pub struct CreatePatientRequest {
     /// Reference to patient's profile information
-    #[validate(length(min = 1))]
     pub profile_id: ProfileId,
     
     /// External patient code from legacy systems

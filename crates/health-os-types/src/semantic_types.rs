@@ -5,7 +5,6 @@
 use chrono::{DateTime, Utc, NaiveDate};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use validator::Validate;
 
 // ============================================================================
 // CORE SEMANTIC TYPES
@@ -725,33 +724,4 @@ pub fn format_phone_number(phone: &PhoneNumber) -> String {
 // MODULE EXPORTS
 // ============================================================================
 
-// Re-export all semantic types for convenient use
-pub use self::{
-    // Core IDs
-    PatientId, ProfileId, ExternalPatientCode, EncounterId, DoctorId, StaffId,
-    VitalsId, AllergyId, MedicationRecordId, PrescriberId,
-    
-    // Medical data
-    BloodType, ContactName, PhoneNumber, InsuranceProvider, PolicyNumber,
-    AllergenName, AllergyReaction, AllergyNotes, MedicationName,
-    Dosage, Frequency,
-    
-    // Measurements
-    SystolicPressure, DiastolicPressure, HeartRate, BodyTemperature,
-    WeightKg, HeightCm, OxygenSaturation,
-    
-    // Temporal types
-    CreatedAt, UpdatedAt, AdmissionDate, DischargeDate,
-    EncounterStart, EncounterEnd, RecordedAt, StartDate, EndDate,
-    
-    // Medical content
-    Diagnosis, Treatment, Notes,
-    
-    // Enums
-    PatientStatus, EncounterType, AllergySeverity,
-    AdministrationRoute, MedicationStatus,
-    
-    // Validation and convenience
-    Validatable, AsString, new_patient_id, new_encounter_id, new_staff_id,
-    validate_blood_pressure, format_phone_number,
-};
+// Note: Types are used directly via crate::semantic_types::*
