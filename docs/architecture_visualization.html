@@ -308,9 +308,10 @@
                         }
                     }).then(() => {
                         // Применяем текущий размер шрифта после инициализации Mermaid
-                        setTimeout(() => {
-                            updateMermaidFontSize();
-                        }, 100);
+                        // Несколько попыток с задержками для надежности
+                        setTimeout(() => updateMermaidFontSize(), 100);
+                        setTimeout(() => updateMermaidFontSize(), 300);
+                        setTimeout(() => updateMermaidFontSize(), 500);
                     }).catch(err => console.error("Mermaid run error:", err));
                 }
                 
@@ -348,10 +349,27 @@
                     // Обновляем все текстовые элементы в SVG
                     const textElements = svg.querySelectorAll('text');
                     textElements.forEach(text => {
-                        if (!text.classList.contains('font-size-controlled')) {
-                            text.classList.add('font-size-controlled');
-                        }
                         text.style.fontSize = currentFontSize + 'px';
+                    });
+                    
+                    // Обновляем стили в теге style внутри SVG
+                    const styleElement = svg.querySelector('style');
+                    if (styleElement) {
+                        let cssText = styleElement.textContent;
+                        // Заменяем все font-size в CSS
+                        cssText = cssText.replace(/font-size:\s*\d+px/g, `font-size: ${currentFontSize}px`);
+                        styleElement.textContent = cssText;
+                    }
+                    
+                    // Обновляем атрибуты font-size у элементов
+                    const allElements = svg.querySelectorAll('*');
+                    allElements.forEach(el => {
+                        if (el.getAttribute('font-size')) {
+                            el.setAttribute('font-size', currentFontSize);
+                        }
+                        if (el.style.fontSize) {
+                            el.style.fontSize = currentFontSize + 'px';
+                        }
                     });
                 }
             });
@@ -398,6 +416,9 @@
             
             // Инициализация отображения размера шрифта
             updateFontDisplay();
+            
+            // Применяем начальный размер шрифта после загрузки
+            setTimeout(() => updateMermaidFontSize(), 1000);
         });
     </script>
 </head>
