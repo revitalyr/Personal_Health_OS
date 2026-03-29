@@ -296,8 +296,15 @@
             if (targetTab) {
                 targetTab.classList.add('active');
                 
-                // Инициализируем Mermaid для новой видимой вкладки
+                // Сохраняем оригинальные определения Mermaid перед инициализацией
                 const mermaidNodes = targetTab.querySelectorAll('.mermaid');
+                mermaidNodes.forEach(element => {
+                    if (!element.dataset.originalDefinition) {
+                        element.dataset.originalDefinition = element.textContent.trim();
+                    }
+                });
+                
+                // Инициализируем Mermaid для новой видимой вкладки
                 if (mermaidNodes.length > 0) {
                     mermaid.run({
                         nodes: mermaidNodes,
@@ -308,10 +315,7 @@
                         }
                     }).then(() => {
                         // Применяем текущий размер шрифта после инициализации Mermaid
-                        // Несколько попыток с задержками для надежности
-                        setTimeout(() => updateMermaidFontSize(), 100);
-                        setTimeout(() => updateMermaidFontSize(), 300);
-                        setTimeout(() => updateMermaidFontSize(), 500);
+                        setTimeout(() => redrawMermaidDiagrams(), 100);
                     }).catch(err => console.error("Mermaid run error:", err));
                 }
                 
@@ -330,49 +334,64 @@
 
         function changeFontSize(delta) {
             currentFontSize = Math.max(12, Math.min(24, currentFontSize + delta));
-            updateMermaidFontSize();
             updateFontDisplay();
+            redrawMermaidDiagrams();
         }
 
-        function updateMermaidFontSize() {
+        function redrawMermaidDiagrams() {
             const activeTab = document.querySelector('.tab-pane.active');
             if (!activeTab) return;
 
             const mermaidElements = activeTab.querySelectorAll('.mermaid');
-            mermaidElements.forEach(element => {
-                element.style.fontSize = currentFontSize + 'px';
+            mermaidElements.forEach((element, index) => {
+                const definition = element.textContent.trim();
+                const container = element.parentNode;
                 
-                const svg = element.querySelector('svg');
-                if (svg) {
-                    svg.style.fontSize = currentFontSize + 'px';
-                    
-                    // Обновляем все текстовые элементы в SVG
-                    const textElements = svg.querySelectorAll('text');
-                    textElements.forEach(text => {
-                        text.style.fontSize = currentFontSize + 'px';
-                    });
-                    
-                    // Обновляем стили в теге style внутри SVG
-                    const styleElement = svg.querySelector('style');
-                    if (styleElement) {
-                        let cssText = styleElement.textContent;
-                        // Заменяем все font-size в CSS
-                        cssText = cssText.replace(/font-size:\s*\d+px/g, `font-size: ${currentFontSize}px`);
-                        styleElement.textContent = cssText;
-                    }
-                    
-                    // Обновляем атрибуты font-size у элементов
-                    const allElements = svg.querySelectorAll('*');
-                    allElements.forEach(el => {
-                        if (el.getAttribute('font-size')) {
-                            el.setAttribute('font-size', currentFontSize);
-                        }
-                        if (el.style.fontSize) {
-                            el.style.fontSize = currentFontSize + 'px';
-                        }
-                    });
+                // Сохраняем оригинальное определение если еще не сохранено
+                if (!element.dataset.originalDefinition) {
+                    element.dataset.originalDefinition = definition;
                 }
+                
+                // Очищаем контейнер
+                element.innerHTML = '';
+                
+                // Обновляем Mermaid конфигурацию с новым размером шрифта
+                mermaid.initialize({ 
+                    startOnLoad: false, 
+                    securityLevel: 'loose', 
+                    theme: 'default',
+                    themeVariables: {
+                        primaryColor: '#667eea',
+                        primaryTextColor: '#333',
+                        primaryBorderColor: '#667eea',
+                        lineColor: '#667eea',
+                        secondaryColor: '#764ba2',
+                        tertiaryColor: '#f8f9fa',
+                        fontSize: currentFontSize + 'px'
+                    },
+                    flowchart: {
+                        useMaxWidth: true,
+                        htmlLabels: true,
+                        curve: 'basis'
+                    }
+                });
+                
+                // Перерисовываем диаграмму
+                element.textContent = element.dataset.originalDefinition;
+                mermaid.run({
+                    nodes: [element],
+                    flowchart: {
+                        useMaxWidth: true,
+                        htmlLabels: true,
+                        curve: 'basis'
+                    }
+                }).catch(err => console.error("Mermaid redraw error:", err));
             });
+        }
+
+        function updateMermaidFontSize() {
+            // Эта функция теперь просто вызывает перерисовку
+            redrawMermaidDiagrams();
         }
 
         function updateFontDisplay() {
