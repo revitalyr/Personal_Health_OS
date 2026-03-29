@@ -296,17 +296,8 @@
             if (targetTab) {
                 targetTab.classList.add('active');
                 
-                // Сохраняем оригинальные определения Mermaid с форматированием ДО инициализации
-                const mermaidNodes = targetTab.querySelectorAll('.mermaid');
-                mermaidNodes.forEach(element => {
-                    if (!element.dataset.originalDefinition) {
-                        // Сохраняем текстовое содержимое с форматированием
-                        const textContent = element.textContent || element.innerText;
-                        element.dataset.originalDefinition = textContent;
-                    }
-                });
-                
                 // Инициализируем Mermaid для новой видимой вкладки
+                const mermaidNodes = targetTab.querySelectorAll('.mermaid');
                 if (mermaidNodes.length > 0) {
                     mermaid.run({
                         nodes: mermaidNodes,
@@ -346,10 +337,10 @@
 
             const mermaidElements = activeTab.querySelectorAll('.mermaid');
             mermaidElements.forEach((element, index) => {
-                // Получаем оригинальное определение с сохранением форматирования
+                // Получаем оригинальное определение из data-атрибута
                 const originalDefinition = element.dataset.originalDefinition;
                 if (!originalDefinition) {
-                    console.warn('No original definition found for mermaid element');
+                    console.warn('No original definition found in data-attribute for mermaid element');
                     return;
                 }
                 
@@ -412,14 +403,6 @@
 
         // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
-            // Сохраняем оригинальные определения всех Mermaid диаграмм ДО инициализации
-            const allMermaidElements = document.querySelectorAll('.mermaid');
-            allMermaidElements.forEach(element => {
-                // Сохраняем текстовое содержимое с форматированием
-                const textContent = element.textContent || element.innerText;
-                element.dataset.originalDefinition = textContent;
-            });
-            
             // Инициализация Mermaid
             mermaid.initialize({ 
                 startOnLoad: false, 
@@ -480,7 +463,67 @@
                     <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
                     <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
                 </div>
-                <div class="mermaid">graph TB
+                <div class="mermaid" data-original-definition="graph TB
+    subgraph &quot;Клиентские приложения&quot;
+        A[Мобильное приложение] 
+        B[Веб-клиент]
+        C[Десктопное приложение]
+    end
+    
+    subgraph &quot;API слой&quot;
+        D[API Gateway&lt;br/&gt;Port 8080]
+    end
+    
+    subgraph &quot;Шина событий&quot;
+        E[NATS Event Bus]
+    end
+    
+    subgraph &quot;Микросервисы&quot;
+        F[Timeline Service&lt;br/&gt;8081]
+        G[Document Processor&lt;br/&gt;8082]
+        H[AI Report Service&lt;br/&gt;8083]
+        I[Doctor Access&lt;br/&gt;8084]
+        J[Patient Management&lt;br/&gt;8085]
+        K[Appointment Scheduling&lt;br/&gt;8086]
+        L[Billing &amp; Invoicing&lt;br/&gt;8087]
+        M[Licence Management&lt;br/&gt;8088]
+        N[Notification Service&lt;br/&gt;8089]
+        O[Reporting Service&lt;br/&gt;8090]
+    end
+    
+    subgraph &quot;База данных&quot;
+        P[PostgreSQL]
+        Q[Redis Cache]
+        R[Object Storage]
+    end
+    
+    A --> D
+    B --> D
+    C --> D
+    D --> E
+    E --> F
+    E --> G
+    E --> H
+    E --> I
+    E --> J
+    E --> K
+    E --> L
+    E --> M
+    E --> N
+    E --> O
+    F --> P
+    G --> P
+    H --> P
+    I --> P
+    J --> P
+    K --> P
+    L --> P
+    M --> P
+    N --> P
+    O --> P
+    F --> Q
+    G --> R
+    H --> P">graph TB
     subgraph "Клиентские приложения"
         A[Мобильное приложение] 
         B[Веб-клиент]
