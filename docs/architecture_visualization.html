@@ -385,7 +385,7 @@
 
             console.log(`Container size: ${finalWidth}x${finalHeight}px, offset Y: ${offsetY}`);
 
-            // Применяем CSS стили с компенсацией смещения
+            // Применяем CSS стили с компенсацией смещения через transform
             const style = document.createElement('style');
             style.id = 'mermaid-scale-override';
             style.textContent = `
@@ -400,9 +400,7 @@
                 }
                 
                 .tab-pane.active .mermaid svg {
-                    position: absolute;
-                    top: ${offsetY}px;
-                    left: 0;
+                    transform: translateY(${offsetY}px);
                 }
                 
                 .tab-pane.active {
