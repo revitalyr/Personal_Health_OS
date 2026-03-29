@@ -296,11 +296,12 @@
             if (targetTab) {
                 targetTab.classList.add('active');
                 
-                // Сохраняем оригинальные определения Mermaid перед инициализацией
+                // Сохраняем оригинальные определения Mermaid с форматированием перед инициализацией
                 const mermaidNodes = targetTab.querySelectorAll('.mermaid');
                 mermaidNodes.forEach(element => {
                     if (!element.dataset.originalDefinition) {
-                        element.dataset.originalDefinition = element.textContent.trim();
+                        // Сохраняем HTML содержимое которое включает форматирование
+                        element.dataset.originalDefinition = element.innerHTML;
                     }
                 });
                 
@@ -344,16 +345,14 @@
 
             const mermaidElements = activeTab.querySelectorAll('.mermaid');
             mermaidElements.forEach((element, index) => {
-                const definition = element.textContent.trim();
-                const container = element.parentNode;
-                
-                // Сохраняем оригинальное определение если еще не сохранено
-                if (!element.dataset.originalDefinition) {
-                    element.dataset.originalDefinition = definition;
-                }
+                // Получаем оригинальное определение с сохранением форматирования
+                const originalDefinition = element.dataset.originalDefinition || element.innerHTML;
                 
                 // Очищаем контейнер
                 element.innerHTML = '';
+                
+                // Восстанавливаем оригинальное определение с правильным форматированием
+                element.textContent = originalDefinition;
                 
                 // Обновляем Mermaid конфигурацию с новым размером шрифта
                 mermaid.initialize({ 
@@ -377,7 +376,6 @@
                 });
                 
                 // Перерисовываем диаграмму
-                element.textContent = element.dataset.originalDefinition;
                 mermaid.run({
                     nodes: [element],
                     flowchart: {
@@ -409,6 +407,12 @@
 
         // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
+            // Сохраняем оригинальные определения всех Mermaid диаграмм
+            const allMermaidElements = document.querySelectorAll('.mermaid');
+            allMermaidElements.forEach(element => {
+                element.dataset.originalDefinition = element.innerHTML;
+            });
+            
             // Инициализация Mermaid
             mermaid.initialize({ 
                 startOnLoad: false, 
@@ -435,9 +439,6 @@
             
             // Инициализация отображения размера шрифта
             updateFontDisplay();
-            
-            // Применяем начальный размер шрифта после загрузки
-            setTimeout(() => updateMermaidFontSize(), 1000);
         });
     </script>
 </head>
