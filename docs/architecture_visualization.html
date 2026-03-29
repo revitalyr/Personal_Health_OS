@@ -343,16 +343,23 @@
                     transform: scale(${currentScale});
                     transform-origin: top left;
                     transition: transform 0.3s ease;
+                    overflow: visible;
+                    width: ${100 * currentScale}%;
+                    height: ${100 * currentScale}%;
+                    min-height: ${600 * currentScale}px;
+                    min-width: ${800 * currentScale}px;
+                }
+                
+                .tab-pane.active {
                     overflow: auto;
                     max-height: 80vh;
-                    max-width: 100%;
                 }
                 
                 .tab-pane.active .mermaid svg {
-                    width: ${100 / currentScale}% !important;
-                    height: ${100 / currentScale}% !important;
-                    min-width: ${800 / currentScale}px;
-                    min-height: ${600 / currentScale}px;
+                    width: 100% !important;
+                    height: 100% !important;
+                    min-width: ${800}px;
+                    min-height: ${600}px;
                 }
                 
                 .tab-pane.active .mermaid svg text {
