@@ -350,7 +350,26 @@
             const activeTab = document.querySelector('.tab-pane.active');
             if (!activeTab) return;
 
-            // Применяем CSS стили с фиксированной компактной высотой
+            // Автоматически подбираем масштаб для читаемости
+            if (currentScale === 1.0) {
+                // Для начальной загрузки подбираем оптимальный масштаб
+                const mermaidSvgs = activeTab.querySelectorAll('.mermaid svg');
+                if (mermaidSvgs.length > 0) {
+                    const svg = mermaidSvgs[0];
+                    const bbox = svg.getBBox ? svg.getBBox() : { width: 800, height: 600 };
+                    const containerWidth = activeTab.offsetWidth - 40; // Вычитаем отступы
+                    
+                    // Рассчитываем масштаб чтобы диаграмма помещалась по ширине
+                    const optimalScale = Math.min(1.5, containerWidth / (bbox.width + 100));
+                    currentScale = Math.max(0.8, Math.min(optimalScale, 1.2));
+                    
+                    console.log(`Auto-calculated scale: ${currentScale} for width ${containerWidth}, bbox width ${bbox.width}`);
+                }
+            }
+
+            // Применяем CSS стили с оптимальной высотой
+            const containerHeight = Math.min(600, window.innerHeight * 0.7);
+            
             const style = document.createElement('style');
             style.id = 'mermaid-scale-override';
             style.textContent = `
@@ -360,7 +379,7 @@
                     transition: transform 0.3s ease;
                     overflow: visible;
                     width: 100%;
-                    height: 400px;
+                    height: ${containerHeight}px;
                     display: flex;
                     justify-content: center;
                     align-items: flex-start;
@@ -416,7 +435,7 @@
             // Добавляем новый стиль
             document.head.appendChild(style);
             
-            console.log('Applied compact fixed-height container');
+            console.log(`Applied readable scale: ${currentScale}, container height: ${containerHeight}px`);
         }
 
         function updateScaleDisplay() {
