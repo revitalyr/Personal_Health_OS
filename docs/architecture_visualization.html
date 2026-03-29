@@ -106,6 +106,35 @@
             text-align: center;
         }
 
+        .font-controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .font-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 0 5px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .font-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .font-size-display {
+            display: inline-block;
+            margin: 0 10px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
         .mermaid {
             display: flex;
             justify-content: center;
@@ -267,7 +296,7 @@
             if (targetTab) {
                 targetTab.classList.add('active');
                 
-                // Инициализация Mermaid для новой видимой вкладки
+                // Инициализируем Mermaid для новой видимой вкладки
                 const mermaidNodes = targetTab.querySelectorAll('.mermaid');
                 if (mermaidNodes.length > 0) {
                     mermaid.run({
@@ -277,14 +306,68 @@
                             htmlLabels: true,
                             curve: 'basis'
                         }
+                    }).then(() => {
+                        // Применяем текущий размер шрифта после инициализации Mermaid
+                        setTimeout(() => {
+                            updateMermaidFontSize();
+                        }, 100);
                     }).catch(err => console.error("Mermaid run error:", err));
                 }
+                
+                // Обновляем отображение размера шрифта
+                updateFontDisplay();
             }
             
             // Активируем кнопку
             if (event && event.currentTarget) {
                 event.currentTarget.classList.add('active');
             }
+        }
+
+        // Управление размером шрифта диаграмм
+        let currentFontSize = 16;
+
+        function changeFontSize(delta) {
+            currentFontSize = Math.max(12, Math.min(24, currentFontSize + delta));
+            updateMermaidFontSize();
+            updateFontDisplay();
+        }
+
+        function updateMermaidFontSize() {
+            const activeTab = document.querySelector('.tab-pane.active');
+            if (!activeTab) return;
+
+            const mermaidElements = activeTab.querySelectorAll('.mermaid');
+            mermaidElements.forEach(element => {
+                element.style.fontSize = currentFontSize + 'px';
+                
+                const svg = element.querySelector('svg');
+                if (svg) {
+                    svg.style.fontSize = currentFontSize + 'px';
+                    
+                    // Обновляем все текстовые элементы в SVG
+                    const textElements = svg.querySelectorAll('text');
+                    textElements.forEach(text => {
+                        if (!text.classList.contains('font-size-controlled')) {
+                            text.classList.add('font-size-controlled');
+                        }
+                        text.style.fontSize = currentFontSize + 'px';
+                    });
+                }
+            });
+        }
+
+        function updateFontDisplay() {
+            const display = document.querySelector('.font-size-display');
+            if (display) {
+                display.textContent = currentFontSize + 'px';
+            }
+        }
+
+        function resetFontSize() {
+            currentFontSize = 16;
+            updateMermaidFontSize();
+            updateFontDisplay();
         }
 
         // Инициализация при загрузке страницы
@@ -312,6 +395,9 @@
             
             // Показываем первую вкладку
             showTab({ currentTarget: document.querySelector('.nav-tab.active') }, 'overview');
+            
+            // Инициализация отображения размера шрифта
+            updateFontDisplay();
         });
     </script>
 </head>
@@ -340,6 +426,12 @@
             <!-- Обзор системы -->
             <section id="overview" class="tab-pane active">
                 <h2>Архитектура системы</h2>
+                <div class="font-controls">
+                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
+                    <span class="font-size-display">16px</span>
+                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                </div>
                 <div class="mermaid">graph TB
     subgraph "Клиентские приложения"
         A[Мобильное приложение] 
@@ -406,6 +498,12 @@
             <!-- Микросервисы -->
             <section id="microservices" class="tab-pane">
                 <h2>Архитектура микросервисов</h2>
+                <div class="font-controls">
+                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
+                    <span class="font-size-display">16px</span>
+                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                </div>
                 <div class="mermaid">graph LR
     subgraph "Основные сервисы"
         A[API Gateway<br/>8080]
@@ -533,6 +631,12 @@
             <!-- Потоки данных -->
             <section id="dataflow" class="tab-pane">
                 <h2>Потоки данных в системе</h2>
+                <div class="font-controls">
+                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
+                    <span class="font-size-display">16px</span>
+                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                </div>
                 <div class="mermaid">sequenceDiagram
     participant C as Клиент
     participant G as API Gateway
@@ -600,6 +704,12 @@
             <!-- База данных -->
             <section id="database" class="tab-pane">
                 <h2>Архитектура базы данных</h2>
+                <div class="font-controls">
+                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
+                    <span class="font-size-display">16px</span>
+                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                </div>
                 <div class="mermaid">graph TB
     subgraph "PostgreSQL - Основная БД"
         A[medical_events<br/>Event Sourcing]
@@ -743,6 +853,12 @@
             <!-- Безопасность -->
             <section id="security" class="tab-pane">
                 <h2>Архитектура безопасности</h2>
+                <div class="font-controls">
+                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
+                    <span class="font-size-display">16px</span>
+                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                </div>
                 <div class="mermaid">graph TB
     subgraph "Authentication Layer"
         A[Client] --> B[JWT Token]
@@ -833,6 +949,12 @@
             <!-- Развертывание -->
             <section id="deployment" class="tab-pane">
                 <h2>Архитектура развертывания</h2>
+                <div class="font-controls">
+                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
+                    <span class="font-size-display">16px</span>
+                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                </div>
                 <div class="mermaid">graph TB
     subgraph "CI/CD Pipeline"
         A[Git Push] --> B[GitHub Actions]
@@ -916,6 +1038,12 @@
             <!-- Производительность -->
             <section id="performance" class="tab-pane">
                 <h2>Оптимизация производительности</h2>
+                <div class="font-controls">
+                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
+                    <span class="font-size-display">16px</span>
+                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                </div>
                 <div class="mermaid">graph LR
     subgraph "Frontend Optimization"
         A[React/Vue Apps] --> B[Code Splitting]
@@ -997,6 +1125,12 @@
             <!-- Интеграции -->
             <section id="integration" class="tab-pane">
                 <h2>Внешние интеграции</h2>
+                <div class="font-controls">
+                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
+                    <span class="font-size-display">16px</span>
+                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                </div>
                 <div class="mermaid">graph TB
     subgraph "Health OS Core"
         A[Timeline Service]
