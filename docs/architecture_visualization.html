@@ -120,6 +120,10 @@
             backdrop-filter: blur(10px);
         }
 
+        .tab-pane {
+            position: relative;
+        }
+
         .scale-btn {
             background: rgba(255, 255, 255, 0.2);
             color: white;
@@ -152,7 +156,6 @@
             border-radius: 10px;
             border: 1px solid #e9ecef;
             font-size: 16px !important;
-            position: relative;
         }
         
         .mermaid svg {
@@ -482,6 +485,12 @@
             <!-- Обзор системы -->
             <section id="overview" class="tab-pane active">
                 <h2>Архитектура системы</h2>
+                <div class="scale-controls">
+                    <button class="scale-btn" onclick="changeScale(-0.1)">−</button>
+                    <span class="scale-display">100%</span>
+                    <button class="scale-btn" onclick="changeScale(0.1)">+</button>
+                    <button class="scale-btn" onclick="resetScale()">⟲</button>
+                </div>
                 <div class="mermaid" data-original-definition="graph TB
     subgraph &quot;Клиентские приложения&quot;
         A[Мобильное приложение] 
@@ -542,13 +551,7 @@
     O --> P
     F --> Q
     G --> R
-    H --> P"><div class="scale-controls">
-                    <button class="scale-btn" onclick="changeScale(-0.1)">−</button>
-                    <span class="scale-display">100%</span>
-                    <button class="scale-btn" onclick="changeScale(0.1)">+</button>
-                    <button class="scale-btn" onclick="resetScale()">⟲</button>
-                </div>
-                graph TB
+    H --> P">graph TB
     subgraph "Клиентские приложения"
         A[Мобильное приложение] 
         B[Веб-клиент]
