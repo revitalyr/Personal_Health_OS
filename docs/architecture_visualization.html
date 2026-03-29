@@ -320,8 +320,10 @@
                             curve: 'basis'
                         }
                     }).then(() => {
-                        // Применяем текущий масштаб после инициализации Mermaid
-                        setTimeout(() => updateMermaidScale(), 100);
+                        // Ждем немного чтобы SVG успел отрендериться, затем измеряем размеры
+                        setTimeout(() => {
+                            updateMermaidScale();
+                        }, 200);
                     }).catch(err => console.error("Mermaid run error:", err));
                 }
                 
@@ -348,7 +350,28 @@
             const activeTab = document.querySelector('.tab-pane.active');
             if (!activeTab) return;
 
-            // Применяем CSS стили для масштабирования всего контейнера
+            // Получаем все SVG диаграммы в активной вкладке
+            const mermaidSvgs = activeTab.querySelectorAll('.mermaid svg');
+            let maxWidth = 0;
+            let maxHeight = 0;
+            
+            // Находим максимальные размеры среди всех диаграмм
+            mermaidSvgs.forEach(svg => {
+                const bbox = svg.getBBox ? svg.getBBox() : { width: 800, height: 600 };
+                const viewBox = svg.getAttribute('viewBox');
+                if (viewBox) {
+                    const [_, __, width, height] = viewBox.split(' ').map(Number);
+                    maxWidth = Math.max(maxWidth, width || bbox.width);
+                    maxHeight = Math.max(maxHeight, height || bbox.height);
+                } else {
+                    maxWidth = Math.max(maxWidth, bbox.width || 800);
+                    maxHeight = Math.max(maxHeight, bbox.height || 600);
+                }
+            });
+
+            console.log(`Mermaid optimal size: ${maxWidth}x${maxHeight}px`);
+
+            // Применяем CSS стили с оптимальными размерами
             const style = document.createElement('style');
             style.id = 'mermaid-scale-override';
             style.textContent = `
@@ -357,22 +380,18 @@
                     transform-origin: top left;
                     transition: transform 0.3s ease;
                     overflow: visible;
-                    width: ${100 * currentScale}%;
-                    height: ${100 * currentScale}%;
-                    min-height: ${600 * currentScale}px;
-                    min-width: ${800 * currentScale}px;
+                    width: ${maxWidth}px;
+                    height: ${maxHeight}px;
                 }
                 
                 .tab-pane.active {
                     overflow: auto;
-                    max-height: 85vh;
+                    max-height: 90vh;
                 }
                 
                 .tab-pane.active .mermaid svg {
                     width: 100% !important;
                     height: 100% !important;
-                    min-width: ${800}px;
-                    min-height: ${600}px;
                 }
                 
                 .tab-pane.active .mermaid svg text {
@@ -455,9 +474,6 @@
             
             // Инициализация отображения масштаба
             updateScaleDisplay();
-            
-            // Применяем начальный масштаб после загрузки
-            setTimeout(() => updateMermaidScale(), 1000);
         });
     </script>
 </head>
