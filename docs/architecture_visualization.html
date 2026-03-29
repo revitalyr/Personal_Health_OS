@@ -354,38 +354,42 @@
             const mermaidSvgs = activeTab.querySelectorAll('.mermaid svg');
             let maxWidth = 0;
             let maxHeight = 0;
-            let minOffsetY = 0;
             
-            // Находим точные размеры содержимого SVG и смещения
+            // Находим точные размеры содержимого SVG и корректируем viewBox
             mermaidSvgs.forEach(svg => {
                 // Получаем bbox - реальные размеры содержимого
                 const bbox = svg.getBBox ? svg.getBBox() : { 
                     x: 0, y: 0, width: 800, height: 600 
                 };
                 
-                // Используем только реальные размеры содержимого
+                // Корректируем viewBox чтобы убрать пустое пространство
+                const currentViewBox = svg.getAttribute('viewBox');
+                if (currentViewBox && bbox.x < 0) {
+                    const [vbX, vbY, vbW, vbH] = currentViewBox.split(' ').map(Number);
+                    const newX = vbX + bbox.x;
+                    const newY = vbY + bbox.y;
+                    svg.setAttribute('viewBox', `${newX} ${newY} ${vbW} ${vbH}`);
+                    console.log(`Adjusted viewBox from ${currentViewBox} to ${newX} ${newY} ${vbW} ${vbH}`);
+                }
+                
+                // Используем реальные размеры содержимого
                 const contentWidth = bbox.width || 800;
                 const contentHeight = bbox.height || 600;
                 
                 maxWidth = Math.max(maxWidth, contentWidth);
                 maxHeight = Math.max(maxHeight, contentHeight);
-                minOffsetY = Math.min(minOffsetY, bbox.y || 0);
                 
-                console.log(`SVG bbox: x=${bbox.x}, y=${bbox.y}, w=${contentWidth}, h=${contentHeight}`);
+                console.log(`SVG content: w=${contentWidth}, h=${contentHeight}, bbox.x=${bbox.x}, bbox.y=${bbox.y}`);
             });
 
-            // Компенсируем отрицательное смещение
-            const offsetY = -minOffsetY;
-            const adjustedHeight = maxHeight + offsetY;
-            
             // Минимальный запас
-            const padding = 5;
+            const padding = 10;
             const finalWidth = maxWidth + padding;
-            const finalHeight = adjustedHeight + padding;
+            const finalHeight = maxHeight + padding;
 
-            console.log(`Container size: ${finalWidth}x${finalHeight}px, offset Y: ${offsetY}`);
+            console.log(`Final container size: ${finalWidth}x${finalHeight}px`);
 
-            // Применяем CSS стили с компенсацией смещения через transform
+            // Применяем CSS стили с точными размерами
             const style = document.createElement('style');
             style.id = 'mermaid-scale-override';
             style.textContent = `
@@ -400,7 +404,8 @@
                 }
                 
                 .tab-pane.active .mermaid svg {
-                    transform: translateY(${offsetY}px);
+                    width: 100% !important;
+                    height: 100% !important;
                 }
                 
                 .tab-pane.active {
