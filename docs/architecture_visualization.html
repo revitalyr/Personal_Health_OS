@@ -354,22 +354,18 @@
             const mermaidSvgs = activeTab.querySelectorAll('.mermaid svg');
             let maxWidth = 0;
             let maxHeight = 0;
+            let cropTop = 0;
             
-            // Находим точные размеры содержимого SVG и корректируем viewBox
+            // Находим точные размеры содержимого и определяем сколько обрезать сверху
             mermaidSvgs.forEach(svg => {
                 // Получаем bbox - реальные размеры содержимого
                 const bbox = svg.getBBox ? svg.getBBox() : { 
                     x: 0, y: 0, width: 800, height: 600 
                 };
                 
-                // Корректируем viewBox чтобы убрать пустое пространство
-                const currentViewBox = svg.getAttribute('viewBox');
-                if (currentViewBox && bbox.x < 0) {
-                    const [vbX, vbY, vbW, vbH] = currentViewBox.split(' ').map(Number);
-                    const newX = vbX + bbox.x;
-                    const newY = vbY + bbox.y;
-                    svg.setAttribute('viewBox', `${newX} ${newY} ${vbW} ${vbH}`);
-                    console.log(`Adjusted viewBox from ${currentViewBox} to ${newX} ${newY} ${vbW} ${vbH}`);
+                // Определяем сколько нужно обрезать сверху
+                if (bbox.y < 0) {
+                    cropTop = Math.max(cropTop, Math.abs(bbox.y));
                 }
                 
                 // Используем реальные размеры содержимого
@@ -379,17 +375,17 @@
                 maxWidth = Math.max(maxWidth, contentWidth);
                 maxHeight = Math.max(maxHeight, contentHeight);
                 
-                console.log(`SVG content: w=${contentWidth}, h=${contentHeight}, bbox.x=${bbox.x}, bbox.y=${bbox.y}`);
+                console.log(`SVG: bbox.x=${bbox.x}, bbox.y=${bbox.y}, w=${contentWidth}, h=${contentHeight}, cropTop=${cropTop}`);
             });
 
             // Минимальный запас
-            const padding = 10;
+            const padding = 5;
             const finalWidth = maxWidth + padding;
             const finalHeight = maxHeight + padding;
 
-            console.log(`Final container size: ${finalWidth}x${finalHeight}px`);
+            console.log(`Final: ${finalWidth}x${finalHeight}px, crop top: ${cropTop}px`);
 
-            // Применяем CSS стили с точными размерами
+            // Применяем CSS стили с обрезкой верхнего пространства
             const style = document.createElement('style');
             style.id = 'mermaid-scale-override';
             style.textContent = `
@@ -401,11 +397,26 @@
                     width: ${finalWidth}px;
                     height: ${finalHeight}px;
                     display: block;
+                    position: relative;
                 }
                 
                 .tab-pane.active .mermaid svg {
                     width: 100% !important;
                     height: 100% !important;
+                    position: absolute;
+                    top: ${-cropTop}px;
+                    left: 0;
+                }
+                
+                .tab-pane.active .mermaid::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: ${cropTop}px;
+                    background: white;
+                    z-index: 1;
                 }
                 
                 .tab-pane.active {
