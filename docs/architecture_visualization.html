@@ -355,21 +355,28 @@
             let maxWidth = 0;
             let maxHeight = 0;
             
-            // Находим максимальные размеры среди всех диаграмм
+            // Находим реальные размеры содержимого SVG
             mermaidSvgs.forEach(svg => {
+                // Получаем реальные размеры через getBoundingClientRect
+                const rect = svg.getBoundingClientRect();
                 const bbox = svg.getBBox ? svg.getBBox() : { width: 800, height: 600 };
-                const viewBox = svg.getAttribute('viewBox');
-                if (viewBox) {
-                    const [_, __, width, height] = viewBox.split(' ').map(Number);
-                    maxWidth = Math.max(maxWidth, width || bbox.width);
-                    maxHeight = Math.max(maxHeight, height || bbox.height);
-                } else {
-                    maxWidth = Math.max(maxWidth, bbox.width || 800);
-                    maxHeight = Math.max(maxHeight, bbox.height || 600);
-                }
+                
+                // Используем реальные размеры SVG, но ограничиваем минимальными значениями
+                const svgWidth = Math.max(bbox.width || 800, rect.width || 800);
+                const svgHeight = Math.max(bbox.height || 600, rect.height || 600);
+                
+                maxWidth = Math.max(maxWidth, svgWidth);
+                maxHeight = Math.max(maxHeight, svgHeight);
+                
+                console.log(`SVG bbox: ${bbox.width}x${bbox.height}, rect: ${rect.width}x${rect.height}, final: ${svgWidth}x${svgHeight}`);
             });
 
-            console.log(`Mermaid optimal size: ${maxWidth}x${maxHeight}px`);
+            // Добавляем небольшой запас для отступов
+            const padding = 20;
+            maxWidth += padding;
+            maxHeight += padding;
+
+            console.log(`Mermaid optimal size with padding: ${maxWidth}x${maxHeight}px`);
 
             // Применяем CSS стили с оптимальными размерами
             const style = document.createElement('style');
@@ -382,16 +389,21 @@
                     overflow: visible;
                     width: ${maxWidth}px;
                     height: ${maxHeight}px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: flex-start;
+                }
+                
+                .tab-pane.active .mermaid svg {
+                    width: auto !important;
+                    height: auto !important;
+                    max-width: 100% !important;
+                    max-height: 100% !important;
                 }
                 
                 .tab-pane.active {
                     overflow: auto;
                     max-height: 90vh;
-                }
-                
-                .tab-pane.active .mermaid svg {
-                    width: 100% !important;
-                    height: 100% !important;
                 }
                 
                 .tab-pane.active .mermaid svg text {
