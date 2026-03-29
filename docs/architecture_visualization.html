@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Health OS - Architecture Visualization</title>
+    
+    <!-- Внешние ресурсы -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    
+    <!-- Стили -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 10px;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .nav-tab {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #667eea;
+            border-color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            animation: fadeIn 1s ease;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        .tab-pane h2 {
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            text-align: center;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #e9ecef;
+            font-size: 16px !important;
+        }
+        
+        .mermaid svg {
+            font-size: 16px !important;
+        }
+        
+        .mermaid .node text {
+            font-size: 14px !important;
+            font-weight: 500;
+        }
+        
+        .mermaid .edgeLabel text {
+            font-size: 12px !important;
+        }
+        
+        .mermaid .cluster text {
+            font-size: 16px !important;
+            font-weight: bold;
+        }
+
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .service-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .service-card h3 {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .service-card p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .tech-stack {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .tech-stack h4 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .tech-stack ul {
+            list-style: none;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .tech-stack li {
+            padding: 2px 0;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .nav-tabs {
+                justify-content: flex-start;
+                overflow-x: auto;
+            }
+        }
+    </style>
+    
+    <!-- Определяем функцию сразу -->
+    <script>
+        // Глобальная функция для onclick
+        function showTab(event, tabName) {
+            // Скрываем все вкладки
+            const tabs = document.getElementsByClassName('tab-pane');
+            for (let i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+            }
+            
+            // Убираем активный класс у кнопок
+            const buttons = document.getElementsByClassName('nav-tab');
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].classList.remove('active');
+            }
+            
+            // Показываем выбранную вкладку
+            const targetTab = document.getElementById(tabName);
+            if (targetTab) {
+                targetTab.classList.add('active');
+                
+                // Инициализация Mermaid для новой видимой вкладки
+                const mermaidNodes = targetTab.querySelectorAll('.mermaid');
+                if (mermaidNodes.length > 0) {
+                    mermaid.run({
+                        nodes: mermaidNodes,
+                        flowchart: {
+                            useMaxWidth: true,
+                            htmlLabels: true,
+                            curve: 'basis'
+                        }
+                    }).catch(err => console.error("Mermaid run error:", err));
+                }
+            }
+            
+            // Активируем кнопку
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация Mermaid
+            mermaid.initialize({ 
+                startOnLoad: false, 
+                securityLevel: 'loose', 
+                theme: 'default',
+                themeVariables: {
+                    primaryColor: '#667eea',
+                    primaryTextColor: '#333',
+                    primaryBorderColor: '#667eea',
+                    lineColor: '#667eea',
+                    secondaryColor: '#764ba2',
+                    tertiaryColor: '#f8f9fa',
+                    fontSize: '16px'
+                },
+                flowchart: {
+                    useMaxWidth: true,
+                    htmlLabels: true,
+                    curve: 'basis'
+                }
+            });
+            
+            // Показываем первую вкладку
+            showTab({ currentTarget: document.querySelector('.nav-tab.active') }, 'overview');
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <header class="header">
+            <h1>🏥 Personal Health OS</h1>
+            <p>Система управления личным здоровьем - Архитектура и потоки данных</p>
+        </header>
+
+        <!-- Навигация по вкладкам -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab(event, 'overview')">Обзор системы</button>
+            <button class="nav-tab" onclick="showTab(event, 'microservices')">Микросервисы</button>
+            <button class="nav-tab" onclick="showTab(event, 'dataflow')">Потоки данных</button>
+            <button class="nav-tab" onclick="showTab(event, 'database')">База данных</button>
+            <button class="nav-tab" onclick="showTab(event, 'security')">Безопасность</button>
+            <button class="nav-tab" onclick="showTab(event, 'deployment')">Развертывание</button>
+            <button class="nav-tab" onclick="showTab(event, 'performance')">Производительность</button>
+            <button class="nav-tab" onclick="showTab(event, 'integration')">Интеграции</button>
+        </nav>
+
+        <!-- Контент вкладок -->
+        <main class="content">
+            <!-- Обзор системы -->
+            <section id="overview" class="tab-pane active">
+                <h2>Архитектура системы</h2>
+                <div class="mermaid">graph TB
+    subgraph "Клиентские приложения"
+        A[Мобильное приложение] 
+        B[Веб-клиент]
+        C[Десктопное приложение]
+    end
+    
+    subgraph "API слой"
+        D[API Gateway<br/>Port 8080]
+    end
+    
+    subgraph "Шина событий"
+        E[NATS Event Bus]
+    end
+    
+    subgraph "Микросервисы"
+        F[Timeline Service<br/>8081]
+        G[Document Processor<br/>8082]
+        H[AI Report Service<br/>8083]
+        I[Doctor Access<br/>8084]
+        J[Patient Management<br/>8085]
+        K[Appointment Scheduling<br/>8086]
+        L[Billing & Invoicing<br/>8087]
+        M[Licence Management<br/>8088]
+        N[Notification Service<br/>8089]
+        O[Reporting Service<br/>8090]
+    end
+    
+    subgraph "База данных"
+        P[PostgreSQL]
+        Q[Redis Cache]
+        R[Object Storage]
+    end
+    
+    A --> D
+    B --> D
+    C --> D
+    D --> E
+    E --> F
+    E --> G
+    E --> H
+    E --> I
+    E --> J
+    E --> K
+    E --> L
+    E --> M
+    E --> N
+    E --> O
+    F --> P
+    G --> P
+    H --> P
+    I --> P
+    J --> P
+    K --> P
+    L --> P
+    M --> P
+    N --> P
+    O --> P
+    F --> Q
+    G --> R
+    H --> P</div>
+            </section>
+
+            <!-- Микросервисы -->
+            <section id="microservices" class="tab-pane">
+                <h2>Архитектура микросервисов</h2>
+                <div class="mermaid">graph LR
+    subgraph "Основные сервисы"
+        A[API Gateway<br/>8080]
+        B[Timeline Service<br/>8081]
+        C[Document Processor<br/>8082]
+        D[AI Report Service<br/>8083]
+        E[Doctor Access<br/>8084]
+    end
+    
+    subgraph "Управление больницей"
+        F[Patient Management<br/>8085]
+        G[Appointment Scheduling<br/>8086]
+        H[Billing & Invoicing<br/>8087]
+    end
+    
+    subgraph "Поддерживающие сервисы"
+        I[Licence Management<br/>8088]
+        J[Notification Service<br/>8089]
+        K[Reporting Service<br/>8090]
+    end
+    
+    A --> B
+    A --> C
+    A --> D
+    A --> E
+    A --> F
+    A --> G
+    A --> H
+    A --> I
+    A --> J
+    A --> K
+    
+    B -.-> F
+    C -.-> F
+    D -.-> F
+    E -.-> F</div>
+
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>🚪 API Gateway (8080)</h3>
+                        <p>Маршрутизация запросов, аутентификация, валидация</p>
+                        <div class="tech-stack">
+                            <h4>Технологии:</h4>
+                            <ul>
+                                <li>• Rust + Axum</li>
+                                <li>• JWT Authentication</li>
+                                <li>• OpenTelemetry</li>
+                                <li>• Tower Middleware</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📅 Timeline Service (8081)</h3>
+                        <p>Агрегация событий, построение временной шкалы</p>
+                        <div class="tech-stack">
+                            <h4>Технологии:</h4>
+                            <ul>
+                                <li>• Rust + Tokio</li>
+                                <li>• PostgreSQL</li>
+                                <li>• Redis Cache</li>
+                                <li>• Event Sourcing</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📄 Document Processor (8082)</h3>
+                        <p>OCR, извлечение медицинских сущностей, хранение</p>
+                        <div class="tech-stack">
+                            <h4>Технологии:</h4>
+                            <ul>
+                                <li>• Tesseract OCR</li>
+                                <li>• AWS S3/Cloudflare R2</li>
+                                <li>• Medical NLP</li>
+                                <li>• Parallel Processing</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>🤖 AI Report Service (8083)</h3>
+                        <p>Генерация отчетов с помощью LLM, RAG</p>
+                        <div class="tech-stack">
+                            <h4>Технологии:</h4>
+                            <ul>
+                                <li>• OpenAI GPT-4/3.5</li>
+                                <li>• Ollama (Local Models)</li>
+                                <li>• Vector Embeddings</li>
+                                <li>• RAG Pipeline</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>👨‍⚕️ Patient Management (8085)</h3>
+                        <p>Управление пациентами, медицинские записи</p>
+                        <div class="tech-stack">
+                            <h4>Технологии:</h4>
+                            <ul>
+                                <li>• Rust + Actix</li>
+                                <li>• PostgreSQL</li>
+                                <li>• HIPAA Compliance</li>
+                                <li>• EMR Management</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📋 Appointment Scheduling (8086)</h3>
+                        <p>Запись на прием, календари, напоминания</p>
+                        <div class="tech-stack">
+                            <h4>Технологии:</h4>
+                            <ul>
+                                <li>• Rust + Tokio</li>
+                                <li>• Calendar Integration</li>
+                                <li>• Email/SMS Reminders</li>
+                                <li>• Real-time Sync</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Потоки данных -->
+            <section id="dataflow" class="tab-pane">
+                <h2>Потоки данных в системе</h2>
+                <div class="mermaid">sequenceDiagram
+    participant C as Клиент
+    participant G as API Gateway
+    participant B as NATS Bus
+    participant T as Timeline Service
+    participant D as Database
+    participant A as AI Service
+    
+    Note over C,A: Создание медицинского события
+    C->>G: POST /api/events
+    G->>G: Аутентификация JWT
+    G->>B: Публикация события
+    B->>T: Обработка события
+    T->>D: Сохранение в medical_events
+    T->>D: Обновление кэша
+    T-->>G: Подтверждение
+    G-->>C: Ответ с ID события
+    
+    Note over C,A: Запрос временной шкалы
+    C->>G: GET /api/timeline/{patient_id}
+    G->>T: Запрос таймлайна
+    T->>D: Проверка кэша Redis
+    alt Кэш найден
+        D-->>T: Данные из кэша
+    else Кэш не найден
+        D->>D: Запрос из PostgreSQL
+        D->>D: Сортировка событий O(n log n)
+        D->>D: Сохранение в кэш
+        D-->>T: Данные из БД
+    end
+    T-->>G: Timeline данные
+    G-->>C: JSON ответ
+    
+    Note over C,A: Генерация AI отчета
+    C->>G: POST /api/reports/generate
+    G->>A: Запрос отчета
+    A->>D: Сбор данных пациента
+    A->>A: Построение контекста
+    A->>A: LLM генерация
+    A->>D: Сохранение отчета
+    A-->>G: Сгенерированный отчет
+    G-->>C: PDF/HTML отчет</div>
+
+                <div class="mermaid">graph TB
+    subgraph "Event Sourcing Pattern"
+        A[Client Request] --> B[API Gateway]
+        B --> C[Event Validation]
+        C --> D[NATS Event Bus]
+        D --> E[Event Handlers]
+        E --> F[PostgreSQL<br/>medical_events]
+        F --> G[Read Models]
+        G --> H[Cache Layer<br/>Redis]
+    end
+    
+    subgraph "CQRS Pattern"
+        I[Commands<br/>Write Operations] --> J[Event Store]
+        K[Queries<br/>Read Operations] --> L[Read Models]
+        J --> M[Event Sourcing]
+        L --> N[Optimized Queries]
+    end
+    
+    H --> O[Client Response]</div>
+            </section>
+
+            <!-- База данных -->
+            <section id="database" class="tab-pane">
+                <h2>Архитектура базы данных</h2>
+                <div class="mermaid">graph TB
+    subgraph "PostgreSQL - Основная БД"
+        A[medical_events<br/>Event Sourcing]
+        B[user_profiles<br/>Пользователи]
+        C[hospital_patients<br/>Пациенты]
+        D[appointments<br/>Записи]
+        E[licences<br/>Лицензии]
+    end
+    
+    subgraph "Redis Cache"
+        F[Timeline Cache]
+        G[Session Cache]
+        H[Rate Limiting]
+    end
+    
+    subgraph "Object Storage"
+        I[Medical Documents]
+        J[Images & DICOM]
+        K[Backups]
+    end
+    
+    A --> F
+    B --> G
+    C --> F
+    D --> H
+    E --> G
+    A --> I
+    C --> J
+    A --> K</div>
+
+                <div class="mermaid">erDiagram
+    medical_events {
+        uuid id PK
+        uuid patient_id FK
+        varchar event_type
+        timestamp timestamp
+        jsonb payload
+        varchar source
+        integer version
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    user_profiles {
+        uuid id PK
+        varchar email UK
+        varchar phone
+        jsonb profile_data
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    hospital_patients {
+        uuid id PK
+        uuid profile_id FK
+        varchar patient_id UK
+        varchar blood_type
+        varchar emergency_contact_name
+        varchar emergency_contact_phone
+        varchar insurance_provider
+        timestamp admission_date
+        timestamp discharge_date
+        varchar status
+    }
+    
+    appointments {
+        uuid id PK
+        uuid patient_id FK
+        uuid doctor_id
+        uuid facility_id
+        varchar appointment_type
+        timestamp start_time
+        timestamp end_time
+        varchar status
+        text notes
+        boolean reminder_sent
+    }
+    
+    licences {
+        uuid id PK
+        varchar licence_key UK
+        varchar customer_name
+        varchar customer_email
+        varchar product_name
+        varchar tier
+        integer max_users
+        timestamp expiry_date
+        boolean is_active
+    }
+    
+    user_profiles ||--o{ medical_events : "generates"
+    user_profiles ||--|| hospital_patients : "extends"
+    hospital_patients ||--o{ appointments : "has"
+    hospital_patients ||--o{ medical_events : "has"</div>
+
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>🗄️ PostgreSQL</h3>
+                        <p>Основная база данных с поддержкой JSONB и временных меток</p>
+                        <div class="tech-stack">
+                            <h4>Особенности:</h4>
+                            <ul>
+                                <li>• Event Sourcing таблицы</li>
+                                <li>• Индексы по patient_id, timestamp</li>
+                                <li>• Партиционирование по датам</li>
+                                <li>• Репликация master-slave</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>⚡ Redis Cache</h3>
+                        <p>Кэширование временных шкал и сессий</p>
+                        <div class="tech-stack">
+                            <h4>Использование:</h4>
+                            <ul>
+                                <li>• Timeline кэширование</li>
+                                <li>• JWT сессии</li>
+                                <li>• Rate limiting</li>
+                                <li>• Real-time данные</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📦 Object Storage</h3>
+                        <p>Хранение медицинских документов и изображений</p>
+                        <div class="tech-stack">
+                            <h4>Хранилище:</h4>
+                            <ul>
+                                <li>• AWS S3 / Cloudflare R2</li>
+                                <li>• PDF документы</li>
+                                <li>• Медицинские изображения</li>
+                                <li>• Резервные копии</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Безопасность -->
+            <section id="security" class="tab-pane">
+                <h2>Архитектура безопасности</h2>
+                <div class="mermaid">graph TB
+    subgraph "Authentication Layer"
+        A[Client] --> B[JWT Token]
+        B --> C[API Gateway<br/>Auth Middleware]
+        C --> D[Token Validation]
+        D --> E[Role Check]
+    end
+    
+    subgraph "Authorization Layer"
+        F[RBAC - Role Based Access]
+        G[Patient Role]
+        H[Doctor Role]
+        I[Admin Role]
+    end
+    
+    subgraph "Data Protection"
+        J[Encryption at Rest<br/>PostgreSQL TDE]
+        K[Encryption in Transit<br/>TLS 1.3]
+        L[Data Masking<br/>Logs & Monitoring]
+    end
+    
+    subgraph "Compliance"
+        M[HIPAA Compliance]
+        N[GDPR Compliance]
+        O[Audit Logging]
+        P[Data Retention Policies]
+    end
+    
+    E --> F
+    F --> G
+    F --> H
+    F --> I
+    G --> J
+    H --> J
+    I --> J
+    J --> K
+    K --> L
+    L --> M
+    M --> N
+    N --> O
+    O --> P</div>
+
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>🔐 Аутентификация</h3>
+                        <p>JWT токены с обновлением и отозванием</p>
+                        <div class="tech-stack">
+                            <h4>Механизмы:</h4>
+                            <ul>
+                                <li>• JWT Access Tokens (24ч)</li>
+                                <li>• Refresh Tokens (7д)</li>
+                                <li>• Многофакторная аутентификация</li>
+                                <li>• OAuth2 / OpenID Connect</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>🛡️ Авторизация</h3>
+                        <p>Ролевая модель доступа к данным</p>
+                        <div class="tech-stack">
+                            <h4>Роли:</h4>
+                            <ul>
+                                <li>• Patient - доступ к своим данным</li>
+                                <li>• Doctor - доступ к пациентам</li>
+                                <li>• Admin - полное управление</li>
+                                <li>• Scope-based доступ</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>🔒 Шифрование</h3>
+                        <p>Защита данных на всех уровнях</p>
+                        <div class="tech-stack">
+                            <h4>Уровни:</h4>
+                            <ul>
+                                <li>• TDE для PostgreSQL</li>
+                                <li>• TLS 1.3 для трафика</li>
+                                <li>• AES-256 для файлов</li>
+                                <li>• Маскирование в логах</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Развертывание -->
+            <section id="deployment" class="tab-pane">
+                <h2>Архитектура развертывания</h2>
+                <div class="mermaid">graph TB
+    subgraph "CI/CD Pipeline"
+        A[Git Push] --> B[GitHub Actions]
+        B --> C[Build & Test]
+        C --> D[Security Scan]
+        D --> E[Docker Build]
+        E --> F[Push to Registry]
+        F --> G[Deploy to K8s]
+    end
+    
+    subgraph "Kubernetes Cluster"
+        H[Ingress Controller]
+        I[API Gateway Pod]
+        J[Service Pods]
+        K[Database StatefulSet]
+        L[Redis Deployment]
+    end
+    
+    subgraph "Infrastructure"
+        M[Load Balancer]
+        N[Auto Scaling]
+        O[Monitoring Stack]
+        P[Logging Stack]
+    end
+    
+    G --> H
+    H --> I
+    I --> J
+    J --> K
+    J --> L
+    I --> M
+    J --> N
+    K --> O
+    L --> P</div>
+
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>🐳 Контейнеризация</h3>
+                        <p>Docker контейнеры с multi-stage builds</p>
+                        <div class="tech-stack">
+                            <h4>Оптимизация:</h4>
+                            <ul>
+                                <li>• Alpine Linux base images</li>
+                                <li>• Multi-stage builds</li>
+                                <li>• Health checks</li>
+                                <li>• Resource limits</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>☸️ Kubernetes</h3>
+                        <p>Оркестрация контейнеров и сервисов</p>
+                        <div class="tech-stack">
+                            <h4>Компоненты:</h4>
+                            <ul>
+                                <li>• Deployments & Services</li>
+                                <li>• ConfigMaps & Secrets</li>
+                                <li>• Ingress Controllers</li>
+                                <li>• HPA для масштабирования</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📊 Мониторинг</h3>
+                        <p>Полная наблюдаемость системы</p>
+                        <div class="tech-stack">
+                            <h4>Стек:</h4>
+                            <ul>
+                                <li>• Prometheus + Grafana</li>
+                                <li>• Jaeger для трейсинга</li>
+                                <li>• ELK Stack для логов</li>
+                                <li>• OpenTelemetry</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Производительность -->
+            <section id="performance" class="tab-pane">
+                <h2>Оптимизация производительности</h2>
+                <div class="mermaid">graph LR
+    subgraph "Frontend Optimization"
+        A[React/Vue Apps] --> B[Code Splitting]
+        B --> C[Lazy Loading]
+        C --> D[CDN Delivery]
+    end
+    
+    subgraph "Backend Optimization"
+        E[API Gateway] --> F[Connection Pooling]
+        F --> G[Caching Strategy]
+        G --> H[Async Processing]
+    end
+    
+    subgraph "Database Optimization"
+        I[PostgreSQL] --> J[Index Optimization]
+        J --> K[Query Optimization]
+        K --> L[Read Replicas]
+    end
+    
+    subgraph "Performance Metrics"
+        M[Response Time <200ms]
+        N[Page Load <2s]
+        O[Database Query <100ms]
+        P[Memory Usage <70%]
+    end
+    
+    D --> E
+    H --> I
+    L --> M
+    M --> N
+    N --> O
+    O --> P</div>
+
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>⚡ Кэширование</h3>
+                        <p>Многоуровневая стратегия кэширования</p>
+                        <div class="tech-stack">
+                            <h4>Уровни:</h4>
+                            <ul>
+                                <li>• CDN для статических ресурсов</li>
+                                <li>• Redis для данных</li>
+                                <li>• Application cache</li>
+                                <li>• Database query cache</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>🔄 Асинхронность</h3>
+                        <p>Асинхронная обработка запросов</p>
+                        <div class="tech-stack">
+                            <h4>Паттерны:</h4>
+                            <ul>
+                                <li>• Tokio async runtime</li>
+                                <li>• Event-driven architecture</li>
+                                <li>• Background job processing</li>
+                                <li>• Streaming responses</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📈 Масштабирование</h3>
+                        <p>Горизонтальное масштабирование</p>
+                        <div class="tech-stack">
+                            <h4>Стратегии:</h4>
+                            <ul>
+                                <li>• Stateless services</li>
+                                <li>• Load balancing</li>
+                                <li>• Database sharding</li>
+                                <li>• Auto-scaling policies</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Интеграции -->
+            <section id="integration" class="tab-pane">
+                <h2>Внешние интеграции</h2>
+                <div class="mermaid">graph TB
+    subgraph "Health OS Core"
+        A[Timeline Service]
+        B[Document Processor]
+        C[AI Report Service]
+    end
+    
+    subgraph "External Services"
+        D[Email Services<br/>SendGrid/SES]
+        E[SMS Services<br/>Twilio]
+        F[Payment Gateways<br/>Stripe/PayPal]
+        G[Medical APIs<br/>HL7/FHIR]
+        H[AI Models<br/>OpenAI/Ollama]
+    end
+    
+    subgraph "Third-party Systems"
+        I[EHR Systems]
+        J[Laboratory Systems]
+        K[Insurance APIs]
+        L[Pharmacy Systems]
+    end
+    
+    A --> D
+    A --> E
+    B --> G
+    B --> I
+    C --> H
+    C --> F
+    A --> J
+    B --> K
+    C --> L</div>
+
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>📧 Коммуникации</h3>
+                        <p>Email, SMS и push уведомления</p>
+                        <div class="tech-stack">
+                            <h4>Сервисы:</h4>
+                            <ul>
+                                <li>• SendGrid / AWS SES</li>
+                                <li>• Twilio для SMS</li>
+                                <li>• Firebase Push</li>
+                                <li>• WebSocket для real-time</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>💳 Платежи</h3>
+                        <p>Интеграция с платежными системами</p>
+                        <div class="tech-stack">
+                            <h4>Провайдеры:</h4>
+                            <ul>
+                                <li>• Stripe Payments</li>
+                                <li>• PayPal Integration</li>
+                                <li>• Apple/Google Pay</li>
+                                <li>• Insurance billing APIs</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>🏥 Медицинские системы</h3>
+                        <p>Интеграция с EHR и лабораториями</p>
+                        <div class="tech-stack">
+                            <h4>Стандарты:</h4>
+                            <ul>
+                                <li>• HL7/FHIR Protocols</li>
+                                <li>• DICOM для изображений</li>
+                                <li>• Laboratory Information Systems</li>
+                                <li>• Pharmacy Management Systems</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
