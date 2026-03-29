@@ -354,8 +354,9 @@
             const mermaidSvgs = activeTab.querySelectorAll('.mermaid svg');
             let maxWidth = 0;
             let maxHeight = 0;
+            let minOffsetY = 0;
             
-            // Находим точные размеры содержимого SVG
+            // Находим точные размеры содержимого SVG и смещения
             mermaidSvgs.forEach(svg => {
                 // Получаем bbox - реальные размеры содержимого
                 const bbox = svg.getBBox ? svg.getBBox() : { 
@@ -368,18 +369,23 @@
                 
                 maxWidth = Math.max(maxWidth, contentWidth);
                 maxHeight = Math.max(maxHeight, contentHeight);
+                minOffsetY = Math.min(minOffsetY, bbox.y || 0);
                 
-                console.log(`SVG content bbox: x=${bbox.x}, y=${bbox.y}, w=${contentWidth}, h=${contentHeight}`);
+                console.log(`SVG bbox: x=${bbox.x}, y=${bbox.y}, w=${contentWidth}, h=${contentHeight}`);
             });
 
-            // Минимальный запас, только если нужно
-            const padding = 10;
-            maxWidth += padding;
-            maxHeight += padding;
+            // Компенсируем отрицательное смещение
+            const offsetY = -minOffsetY;
+            const adjustedHeight = maxHeight + offsetY;
+            
+            // Минимальный запас
+            const padding = 5;
+            const finalWidth = maxWidth + padding;
+            const finalHeight = adjustedHeight + padding;
 
-            console.log(`Final container size: ${maxWidth}x${maxHeight}px`);
+            console.log(`Container size: ${finalWidth}x${finalHeight}px, offset Y: ${offsetY}`);
 
-            // Применяем CSS стили с точными размерами
+            // Применяем CSS стили с компенсацией смещения
             const style = document.createElement('style');
             style.id = 'mermaid-scale-override';
             style.textContent = `
@@ -388,13 +394,15 @@
                     transform-origin: top left;
                     transition: transform 0.3s ease;
                     overflow: visible;
-                    width: ${maxWidth}px;
-                    height: ${maxHeight}px;
+                    width: ${finalWidth}px;
+                    height: ${finalHeight}px;
                     display: block;
                 }
                 
                 .tab-pane.active .mermaid svg {
-                    position: relative;
+                    position: absolute;
+                    top: ${offsetY}px;
+                    left: 0;
                 }
                 
                 .tab-pane.active {
