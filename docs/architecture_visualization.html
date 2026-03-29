@@ -296,12 +296,13 @@
             if (targetTab) {
                 targetTab.classList.add('active');
                 
-                // Сохраняем оригинальные определения Mermaid с форматированием перед инициализацией
+                // Сохраняем оригинальные определения Mermaid с форматированием ДО инициализации
                 const mermaidNodes = targetTab.querySelectorAll('.mermaid');
                 mermaidNodes.forEach(element => {
                     if (!element.dataset.originalDefinition) {
-                        // Сохраняем HTML содержимое которое включает форматирование
-                        element.dataset.originalDefinition = element.innerHTML;
+                        // Сохраняем текстовое содержимое с форматированием
+                        const textContent = element.textContent || element.innerText;
+                        element.dataset.originalDefinition = textContent;
                     }
                 });
                 
@@ -346,7 +347,11 @@
             const mermaidElements = activeTab.querySelectorAll('.mermaid');
             mermaidElements.forEach((element, index) => {
                 // Получаем оригинальное определение с сохранением форматирования
-                const originalDefinition = element.dataset.originalDefinition || element.innerHTML;
+                const originalDefinition = element.dataset.originalDefinition;
+                if (!originalDefinition) {
+                    console.warn('No original definition found for mermaid element');
+                    return;
+                }
                 
                 // Очищаем контейнер
                 element.innerHTML = '';
@@ -407,10 +412,12 @@
 
         // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
-            // Сохраняем оригинальные определения всех Mermaid диаграмм
+            // Сохраняем оригинальные определения всех Mermaid диаграмм ДО инициализации
             const allMermaidElements = document.querySelectorAll('.mermaid');
             allMermaidElements.forEach(element => {
-                element.dataset.originalDefinition = element.innerHTML;
+                // Сохраняем текстовое содержимое с форматированием
+                const textContent = element.textContent || element.innerText;
+                element.dataset.originalDefinition = textContent;
             });
             
             // Инициализация Mermaid
