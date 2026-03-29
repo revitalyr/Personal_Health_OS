@@ -307,13 +307,13 @@
                             curve: 'basis'
                         }
                     }).then(() => {
-                        // Применяем текущий размер шрифта после инициализации Mermaid
-                        setTimeout(() => updateMermaidFontSize(), 100);
+                        // Применяем текущий масштаб после инициализации Mermaid
+                        setTimeout(() => updateMermaidScale(), 100);
                     }).catch(err => console.error("Mermaid run error:", err));
                 }
                 
-                // Обновляем отображение размера шрифта
-                updateFontDisplay();
+                // Обновляем отображение масштаба
+                updateScaleDisplay();
             }
             
             // Активируем кнопку
@@ -323,50 +323,69 @@
         }
 
         // Управление размером шрифта диаграмм
-        let currentFontSize = 16;
+        let currentScale = 1.0;
 
-        function changeFontSize(delta) {
-            currentFontSize = Math.max(12, Math.min(24, currentFontSize + delta));
-            updateFontDisplay();
-            updateMermaidFontSize();
+        function changeScale(delta) {
+            currentScale = Math.max(0.5, Math.min(2.0, currentScale + delta));
+            updateScaleDisplay();
+            updateMermaidScale();
         }
 
-        function updateMermaidFontSize() {
+        function updateMermaidScale() {
             const activeTab = document.querySelector('.tab-pane.active');
             if (!activeTab) return;
 
-            // Применяем CSS стили для всех элементов диаграммы
+            // Применяем CSS стили для масштабирования всего контейнера
             const style = document.createElement('style');
-            style.id = 'mermaid-font-override';
+            style.id = 'mermaid-scale-override';
             style.textContent = `
+                .tab-pane.active .mermaid {
+                    transform: scale(${currentScale});
+                    transform-origin: top left;
+                    transition: transform 0.3s ease;
+                    overflow: auto;
+                    max-height: 80vh;
+                    max-width: 100%;
+                }
+                
                 .tab-pane.active .mermaid svg {
-                    font-size: ${currentFontSize}px !important;
+                    width: ${100 / currentScale}% !important;
+                    height: ${100 / currentScale}% !important;
+                    min-width: ${800 / currentScale}px;
+                    min-height: ${600 / currentScale}px;
                 }
+                
                 .tab-pane.active .mermaid svg text {
-                    font-size: ${currentFontSize}px !important;
+                    font-size: ${16 * currentScale}px !important;
                 }
+                
                 .tab-pane.active .mermaid .node text {
-                    font-size: ${currentFontSize}px !important;
+                    font-size: ${16 * currentScale}px !important;
                 }
+                
                 .tab-pane.active .mermaid .edgeLabel text {
-                    font-size: ${currentFontSize}px !important;
+                    font-size: ${16 * currentScale}px !important;
                 }
+                
                 .tab-pane.active .mermaid .cluster text {
-                    font-size: ${currentFontSize}px !important;
+                    font-size: ${16 * currentScale}px !important;
                 }
+                
                 .tab-pane.active .mermaid .title text {
-                    font-size: ${currentFontSize + 2}px !important;
+                    font-size: ${18 * currentScale}px !important;
                 }
+                
                 .tab-pane.active .mermaid g.node > text {
-                    font-size: ${currentFontSize}px !important;
+                    font-size: ${16 * currentScale}px !important;
                 }
+                
                 .tab-pane.active .mermaid g.edgeLabel > text {
-                    font-size: ${currentFontSize}px !important;
+                    font-size: ${16 * currentScale}px !important;
                 }
             `;
             
             // Удаляем старый стиль если есть
-            const oldStyle = document.getElementById('mermaid-font-override');
+            const oldStyle = document.getElementById('mermaid-scale-override');
             if (oldStyle) {
                 oldStyle.remove();
             }
@@ -375,17 +394,17 @@
             document.head.appendChild(style);
         }
 
-        function updateFontDisplay() {
+        function updateScaleDisplay() {
             const display = document.querySelector('.font-size-display');
             if (display) {
-                display.textContent = currentFontSize + 'px';
+                display.textContent = Math.round(currentScale * 100) + '%';
             }
         }
 
-        function resetFontSize() {
-            currentFontSize = 16;
-            updateMermaidFontSize();
-            updateFontDisplay();
+        function resetScale() {
+            currentScale = 1.0;
+            updateMermaidScale();
+            updateScaleDisplay();
         }
 
         // Инициализация при загрузке страницы
@@ -414,11 +433,11 @@
             // Показываем первую вкладку
             showTab({ currentTarget: document.querySelector('.nav-tab.active') }, 'overview');
             
-            // Инициализация отображения размера шрифта
-            updateFontDisplay();
+            // Инициализация отображения масштаба
+            updateScaleDisplay();
             
-            // Применяем начальный размер шрифта после загрузки
-            setTimeout(() => updateMermaidFontSize(), 1000);
+            // Применяем начальный масштаб после загрузки
+            setTimeout(() => updateMermaidScale(), 1000);
         });
     </script>
 </head>
@@ -448,10 +467,10 @@
             <section id="overview" class="tab-pane active">
                 <h2>Архитектура системы</h2>
                 <div class="font-controls">
-                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
-                    <span class="font-size-display">16px</span>
-                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
-                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                    <button class="font-btn" onclick="changeScale(-0.1)">🔽 Уменьшить</button>
+                    <span class="font-size-display">100%</span>
+                    <button class="font-btn" onclick="changeScale(0.1)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetScale()">🔄 Сброс</button>
                 </div>
                 <div class="mermaid" data-original-definition="graph TB
     subgraph &quot;Клиентские приложения&quot;
@@ -580,10 +599,10 @@
             <section id="microservices" class="tab-pane">
                 <h2>Архитектура микросервисов</h2>
                 <div class="font-controls">
-                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
-                    <span class="font-size-display">16px</span>
-                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
-                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                    <button class="font-btn" onclick="changeScale(-0.1)">🔽 Уменьшить</button>
+                    <span class="font-size-display">100%</span>
+                    <button class="font-btn" onclick="changeScale(0.1)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetScale()">🔄 Сброс</button>
                 </div>
                 <div class="mermaid">graph LR
     subgraph "Основные сервисы"
@@ -713,10 +732,10 @@
             <section id="dataflow" class="tab-pane">
                 <h2>Потоки данных в системе</h2>
                 <div class="font-controls">
-                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
-                    <span class="font-size-display">16px</span>
-                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
-                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                    <button class="font-btn" onclick="changeScale(-0.1)">🔽 Уменьшить</button>
+                    <span class="font-size-display">100%</span>
+                    <button class="font-btn" onclick="changeScale(0.1)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetScale()">🔄 Сброс</button>
                 </div>
                 <div class="mermaid">sequenceDiagram
     participant C as Клиент
@@ -786,10 +805,10 @@
             <section id="database" class="tab-pane">
                 <h2>Архитектура базы данных</h2>
                 <div class="font-controls">
-                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
-                    <span class="font-size-display">16px</span>
-                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
-                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                    <button class="font-btn" onclick="changeScale(-0.1)">🔽 Уменьшить</button>
+                    <span class="font-size-display">100%</span>
+                    <button class="font-btn" onclick="changeScale(0.1)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetScale()">🔄 Сброс</button>
                 </div>
                 <div class="mermaid">graph TB
     subgraph "PostgreSQL - Основная БД"
@@ -935,10 +954,10 @@
             <section id="security" class="tab-pane">
                 <h2>Архитектура безопасности</h2>
                 <div class="font-controls">
-                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
-                    <span class="font-size-display">16px</span>
-                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
-                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                    <button class="font-btn" onclick="changeScale(-0.1)">🔽 Уменьшить</button>
+                    <span class="font-size-display">100%</span>
+                    <button class="font-btn" onclick="changeScale(0.1)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetScale()">🔄 Сброс</button>
                 </div>
                 <div class="mermaid">graph TB
     subgraph "Authentication Layer"
@@ -1031,10 +1050,10 @@
             <section id="deployment" class="tab-pane">
                 <h2>Архитектура развертывания</h2>
                 <div class="font-controls">
-                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
-                    <span class="font-size-display">16px</span>
-                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
-                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                    <button class="font-btn" onclick="changeScale(-0.1)">🔽 Уменьшить</button>
+                    <span class="font-size-display">100%</span>
+                    <button class="font-btn" onclick="changeScale(0.1)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetScale()">🔄 Сброс</button>
                 </div>
                 <div class="mermaid">graph TB
     subgraph "CI/CD Pipeline"
@@ -1120,10 +1139,10 @@
             <section id="performance" class="tab-pane">
                 <h2>Оптимизация производительности</h2>
                 <div class="font-controls">
-                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
-                    <span class="font-size-display">16px</span>
-                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
-                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                    <button class="font-btn" onclick="changeScale(-0.1)">🔽 Уменьшить</button>
+                    <span class="font-size-display">100%</span>
+                    <button class="font-btn" onclick="changeScale(0.1)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetScale()">🔄 Сброс</button>
                 </div>
                 <div class="mermaid">graph LR
     subgraph "Frontend Optimization"
@@ -1207,10 +1226,10 @@
             <section id="integration" class="tab-pane">
                 <h2>Внешние интеграции</h2>
                 <div class="font-controls">
-                    <button class="font-btn" onclick="changeFontSize(-2)">🔽 Уменьшить</button>
-                    <span class="font-size-display">16px</span>
-                    <button class="font-btn" onclick="changeFontSize(2)">🔽 Увеличить</button>
-                    <button class="font-btn" onclick="resetFontSize()">🔄 Сброс</button>
+                    <button class="font-btn" onclick="changeScale(-0.1)">🔽 Уменьшить</button>
+                    <span class="font-size-display">100%</span>
+                    <button class="font-btn" onclick="changeScale(0.1)">🔽 Увеличить</button>
+                    <button class="font-btn" onclick="resetScale()">🔄 Сброс</button>
                 </div>
                 <div class="mermaid">graph TB
     subgraph "Health OS Core"
