@@ -339,8 +339,11 @@
 
         // Управление размером шрифта диаграмм
         let currentScale = 1.0;
+        let isInitialLoad = true;
 
         function changeScale(delta) {
+            // Предотвращаем авто-масштабирование после ручного изменения
+            isInitialLoad = false;
             currentScale = Math.max(0.5, Math.min(2.0, currentScale + delta));
             updateScaleDisplay();
             updateMermaidScale();
@@ -350,8 +353,8 @@
             const activeTab = document.querySelector('.tab-pane.active');
             if (!activeTab) return;
 
-            // Автоматически подбираем масштаб для читаемости
-            if (currentScale === 1.0) {
+            // Автоматически подбираем масштаб только при начальной загрузке
+            if (isInitialLoad && currentScale === 1.0) {
                 // Для начальной загрузки подбираем оптимальный масштаб
                 const mermaidSvgs = activeTab.querySelectorAll('.mermaid svg');
                 if (mermaidSvgs.length > 0) {
@@ -364,6 +367,7 @@
                     currentScale = Math.max(0.8, Math.min(optimalScale, 1.2));
                     
                     console.log(`Auto-calculated scale: ${currentScale} for width ${containerWidth}, bbox width ${bbox.width}`);
+                    updateScaleDisplay(); // Обновляем отображение после авто-расчета
                 }
             }
 
@@ -435,7 +439,14 @@
             // Добавляем новый стиль
             document.head.appendChild(style);
             
-            console.log(`Applied readable scale: ${currentScale}, container height: ${containerHeight}px`);
+            console.log(`Applied scale: ${currentScale}, container height: ${containerHeight}px, initial: ${isInitialLoad}`);
+        }
+
+        function resetScale() {
+            isInitialLoad = false; // Сбрасываем флаг начальной загрузки
+            currentScale = 1.0;
+            updateMermaidScale();
+            updateScaleDisplay();
         }
 
         function updateScaleDisplay() {
