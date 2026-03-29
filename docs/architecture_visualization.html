@@ -308,7 +308,7 @@
                         }
                     }).then(() => {
                         // Применяем текущий размер шрифта после инициализации Mermaid
-                        setTimeout(() => redrawMermaidDiagrams(), 100);
+                        setTimeout(() => updateMermaidFontSize(), 100);
                     }).catch(err => console.error("Mermaid run error:", err));
                 }
                 
@@ -328,64 +328,51 @@
         function changeFontSize(delta) {
             currentFontSize = Math.max(12, Math.min(24, currentFontSize + delta));
             updateFontDisplay();
-            redrawMermaidDiagrams();
-        }
-
-        function redrawMermaidDiagrams() {
-            const activeTab = document.querySelector('.tab-pane.active');
-            if (!activeTab) return;
-
-            const mermaidElements = activeTab.querySelectorAll('.mermaid');
-            mermaidElements.forEach((element, index) => {
-                // Получаем оригинальное определение из data-атрибута
-                const originalDefinition = element.dataset.originalDefinition;
-                if (!originalDefinition) {
-                    console.warn('No original definition found in data-attribute for mermaid element');
-                    return;
-                }
-                
-                // Очищаем контейнер
-                element.innerHTML = '';
-                
-                // Восстанавливаем оригинальное определение с правильным форматированием
-                element.textContent = originalDefinition;
-                
-                // Обновляем Mermaid конфигурацию с новым размером шрифта
-                mermaid.initialize({ 
-                    startOnLoad: false, 
-                    securityLevel: 'loose', 
-                    theme: 'default',
-                    themeVariables: {
-                        primaryColor: '#667eea',
-                        primaryTextColor: '#333',
-                        primaryBorderColor: '#667eea',
-                        lineColor: '#667eea',
-                        secondaryColor: '#764ba2',
-                        tertiaryColor: '#f8f9fa',
-                        fontSize: currentFontSize + 'px'
-                    },
-                    flowchart: {
-                        useMaxWidth: true,
-                        htmlLabels: true,
-                        curve: 'basis'
-                    }
-                });
-                
-                // Перерисовываем диаграмму
-                mermaid.run({
-                    nodes: [element],
-                    flowchart: {
-                        useMaxWidth: true,
-                        htmlLabels: true,
-                        curve: 'basis'
-                    }
-                }).catch(err => console.error("Mermaid redraw error:", err));
-            });
+            updateMermaidFontSize();
         }
 
         function updateMermaidFontSize() {
-            // Эта функция теперь просто вызывает перерисовку
-            redrawMermaidDiagrams();
+            const activeTab = document.querySelector('.tab-pane.active');
+            if (!activeTab) return;
+
+            // Применяем CSS стили для всех элементов диаграммы
+            const style = document.createElement('style');
+            style.id = 'mermaid-font-override';
+            style.textContent = `
+                .tab-pane.active .mermaid svg {
+                    font-size: ${currentFontSize}px !important;
+                }
+                .tab-pane.active .mermaid svg text {
+                    font-size: ${currentFontSize}px !important;
+                }
+                .tab-pane.active .mermaid .node text {
+                    font-size: ${currentFontSize}px !important;
+                }
+                .tab-pane.active .mermaid .edgeLabel text {
+                    font-size: ${currentFontSize}px !important;
+                }
+                .tab-pane.active .mermaid .cluster text {
+                    font-size: ${currentFontSize}px !important;
+                }
+                .tab-pane.active .mermaid .title text {
+                    font-size: ${currentFontSize + 2}px !important;
+                }
+                .tab-pane.active .mermaid g.node > text {
+                    font-size: ${currentFontSize}px !important;
+                }
+                .tab-pane.active .mermaid g.edgeLabel > text {
+                    font-size: ${currentFontSize}px !important;
+                }
+            `;
+            
+            // Удаляем старый стиль если есть
+            const oldStyle = document.getElementById('mermaid-font-override');
+            if (oldStyle) {
+                oldStyle.remove();
+            }
+            
+            // Добавляем новый стиль
+            document.head.appendChild(style);
         }
 
         function updateFontDisplay() {
@@ -429,6 +416,9 @@
             
             // Инициализация отображения размера шрифта
             updateFontDisplay();
+            
+            // Применяем начальный размер шрифта после загрузки
+            setTimeout(() => updateMermaidFontSize(), 1000);
         });
     </script>
 </head>
