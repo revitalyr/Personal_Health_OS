@@ -355,30 +355,31 @@
             let maxWidth = 0;
             let maxHeight = 0;
             
-            // Находим реальные размеры содержимого SVG
+            // Находим точные размеры содержимого SVG
             mermaidSvgs.forEach(svg => {
-                // Получаем реальные размеры через getBoundingClientRect
-                const rect = svg.getBoundingClientRect();
-                const bbox = svg.getBBox ? svg.getBBox() : { width: 800, height: 600 };
+                // Получаем bbox - реальные размеры содержимого
+                const bbox = svg.getBBox ? svg.getBBox() : { 
+                    x: 0, y: 0, width: 800, height: 600 
+                };
                 
-                // Используем реальные размеры SVG, но ограничиваем минимальными значениями
-                const svgWidth = Math.max(bbox.width || 800, rect.width || 800);
-                const svgHeight = Math.max(bbox.height || 600, rect.height || 600);
+                // Используем только реальные размеры содержимого
+                const contentWidth = bbox.width || 800;
+                const contentHeight = bbox.height || 600;
                 
-                maxWidth = Math.max(maxWidth, svgWidth);
-                maxHeight = Math.max(maxHeight, svgHeight);
+                maxWidth = Math.max(maxWidth, contentWidth);
+                maxHeight = Math.max(maxHeight, contentHeight);
                 
-                console.log(`SVG bbox: ${bbox.width}x${bbox.height}, rect: ${rect.width}x${rect.height}, final: ${svgWidth}x${svgHeight}`);
+                console.log(`SVG content bbox: x=${bbox.x}, y=${bbox.y}, w=${contentWidth}, h=${contentHeight}`);
             });
 
-            // Добавляем небольшой запас для отступов
-            const padding = 20;
+            // Минимальный запас, только если нужно
+            const padding = 10;
             maxWidth += padding;
             maxHeight += padding;
 
-            console.log(`Mermaid optimal size with padding: ${maxWidth}x${maxHeight}px`);
+            console.log(`Final container size: ${maxWidth}x${maxHeight}px`);
 
-            // Применяем CSS стили с оптимальными размерами
+            // Применяем CSS стили с точными размерами
             const style = document.createElement('style');
             style.id = 'mermaid-scale-override';
             style.textContent = `
@@ -389,16 +390,11 @@
                     overflow: visible;
                     width: ${maxWidth}px;
                     height: ${maxHeight}px;
-                    display: flex;
-                    justify-content: center;
-                    align-items: flex-start;
+                    display: block;
                 }
                 
                 .tab-pane.active .mermaid svg {
-                    width: auto !important;
-                    height: auto !important;
-                    max-width: 100% !important;
-                    max-height: 100% !important;
+                    position: relative;
                 }
                 
                 .tab-pane.active {
