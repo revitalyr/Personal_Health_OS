@@ -107,74 +107,85 @@
             text-align: center;
         }
 
-        .scale-controls {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: rgba(102, 126, 234, 0.9);
-            border-radius: 4px;
-            padding: 1px 2px;
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            z-index: 10;
-            backdrop-filter: blur(10px);
+        /* Diagram container - динамическая высота */
+        .diagram-container {
+            position: relative;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            transition: all 0.2s ease;
+            overflow: visible;
         }
 
-        .tab-pane {
-            position: relative;
+        .mermaid-wrapper {
+            display: flex;
+            justify-content: center;
+            padding: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .mermaid {
+            background: transparent;
+            display: inline-block;
+            width: auto !important;
+        }
+
+        .mermaid svg {
+            max-width: 100%;
+            height: auto !important;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .scale-controls {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(102, 126, 234, 0.95);
+            border-radius: 20px;
+            padding: 4px 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
         .scale-btn {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.25);
             color: white;
             border: none;
-            padding: 1px 2px;
-            border-radius: 2px;
+            padding: 4px 10px;
+            border-radius: 16px;
             cursor: pointer;
-            font-size: 8px;
+            font-size: 12px;
+            font-weight: bold;
             transition: all 0.2s ease;
         }
 
         .scale-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(1.05);
         }
 
         .scale-display {
             color: white;
-            font-size: 8px;
+            font-size: 12px;
             font-weight: bold;
-            min-width: 25px;
+            min-width: 45px;
             text-align: center;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 8px;
+            border-radius: 20px;
         }
 
-        .mermaid {
-            display: flex;
-            justify-content: center;
-            margin: 1px 0;
-            background: #f8f9fa;
-            padding: 3px;
-            border-radius: 3px;
-            border: 1px solid #e9ecef;
-            font-size: 16px !important;
-        }
-        
-        .mermaid svg {
-            font-size: 16px !important;
-        }
-        
-        .mermaid .node text {
-            font-size: 14px !important;
-            font-weight: 500;
-        }
-        
-        .mermaid .edgeLabel text {
-            font-size: 12px !important;
-        }
-        
-        .mermaid .cluster text {
-            font-size: 16px !important;
-            font-weight: bold;
+        /* Убираем старые фиксированные высоты */
+        .tab-pane.active .mermaid {
+            transform: none;
+            transform-origin: center;
+            transition: transform 0.2s ease;
         }
 
         .service-grid {
@@ -208,14 +219,13 @@
         }
 
         .tech-stack {
-            background: #f8f9fa;
+            background: rgba(255,255,255,0.15);
             padding: 15px;
             border-radius: 10px;
             margin-top: 10px;
         }
 
         .tech-stack h4 {
-            color: #495057;
             margin-bottom: 10px;
             font-size: 0.9rem;
         }
@@ -223,7 +233,6 @@
         .tech-stack ul {
             list-style: none;
             font-size: 0.8rem;
-            color: #6c757d;
         }
 
         .tech-stack li {
@@ -231,25 +240,13 @@
         }
 
         @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @keyframes fadeIn {
@@ -258,378 +255,50 @@
         }
 
         @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
         @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .content {
-                padding: 20px;
-            }
-            
-            .nav-tabs {
-                justify-content: flex-start;
-                overflow-x: auto;
-            }
+            .container { padding: 10px; }
+            .header h1 { font-size: 2rem; }
+            .content { padding: 20px; }
+            .nav-tabs { justify-content: flex-start; overflow-x: auto; }
+            .scale-controls { top: 4px; right: 4px; padding: 2px 6px; gap: 4px; }
+            .scale-btn { padding: 2px 6px; font-size: 10px; }
+            .scale-display { font-size: 10px; min-width: 35px; }
         }
     </style>
-    
-    <!-- Define global function immediately -->
-    <script>
-        // Global function for onclick
-        function showTab(event, tabName) {
-            // Hide all tabs
-            const tabs = document.getElementsByClassName('tab-pane');
-            for (let i = 0; i < tabs.length; i++) {
-                tabs[i].classList.remove('active');
-            }
-            
-            // Remove active class from buttons
-            const buttons = document.getElementsByClassName('nav-tab');
-            for (let i = 0; i < buttons.length; i++) {
-                buttons[i].classList.remove('active');
-            }
-            
-            // Show selected tab
-            const targetTab = document.getElementById(tabName);
-            if (targetTab) {
-                targetTab.classList.add('active');
-                
-                // Initialize Mermaid for new visible tab
-                const mermaidNodes = targetTab.querySelectorAll('.mermaid');
-                if (mermaidNodes.length > 0) {
-                    mermaid.run({
-                        nodes: mermaidNodes,
-                        flowchart: {
-                            useMaxWidth: true,
-                            htmlLabels: true,
-                            curve: 'basis'
-                        }
-                    }).then(() => {
-                        // Wait for Mermaid to render, then force SVG height
-                        setTimeout(() => {
-                            updateMermaidScale();
-                        }, 300); // Increased delay for full rendering
-                    }).catch(err => console.error("Mermaid run error:", err));
-                }
-                
-                // Update scale display
-                updateScaleDisplay();
-            }
-            
-            // Activate button
-            if (event && event.currentTarget) {
-                event.currentTarget.classList.add('active');
-            }
-        }
-
-        // Diagram font size control
-        let currentScale = 1.0;
-        let isInitialLoad = true;
-        let currentTabIndex = 0;
-        const tabIds = ['overview', 'microservices', 'dataflow', 'database', 'security', 'deployment', 'performance', 'integration'];
-
-        // Handle Ctrl+Tab for tab switching
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'Tab') {
-                e.preventDefault();
-                
-                // Determine switching direction
-                const direction = e.shiftKey ? -1 : 1;
-                currentTabIndex = (currentTabIndex + direction + tabIds.length) % tabIds.length;
-                
-                // Find button to activate
-                const targetTabId = tabIds[currentTabIndex];
-                const targetButton = document.querySelector(`.nav-tab[onclick*="${targetTabId}"]`);
-                
-                if (targetButton) {
-                    showTab({ currentTarget: targetButton }, targetTabId);
-                }
-            }
-        });
-
-        function changeScale(delta) {
-            // Prevent auto-scaling after manual change
-            isInitialLoad = false;
-            currentScale = Math.max(0.5, Math.min(2.0, currentScale + delta));
-            updateScaleDisplay();
-            
-            // Force immediate SVG height update after scale change
-            setTimeout(() => {
-                updateMermaidScale();
-            }, 50);
-        }
-
-        function updateMermaidScale() {
-            const activeTab = document.querySelector('.tab-pane.active');
-            if (!activeTab) return;
-
-            // Auto-select scale only on initial load
-            if (isInitialLoad && currentScale === 1.0) {
-                // For initial load, select optimal scale
-                const mermaidSvgs = activeTab.querySelectorAll('.mermaid svg');
-                if (mermaidSvgs.length > 0) {
-                    const svg = mermaidSvgs[0];
-                    const bbox = svg.getBBox ? svg.getBBox() : { width: 800, height: 600 };
-                    const containerWidth = activeTab.offsetWidth - 40; // Subtract margins
-                    
-                    // Calculate scale so diagram fits by width
-                    const optimalScale = Math.min(1.5, containerWidth / (bbox.width + 100));
-                    currentScale = Math.max(0.8, Math.min(optimalScale, 1.2));
-                    
-                    console.log(`Auto-calculated scale: ${currentScale} for width ${containerWidth}, bbox width ${bbox.width}`);
-                    updateScaleDisplay(); // Update display after auto-calculation
-                }
-            }
-
-            // Get actual SVG height for precise container size
-            const mermaidSvgs = activeTab.querySelectorAll('.mermaid svg');
-            let svgHeight = 600; // increased default height
-            if (mermaidSvgs.length > 0) {
-                const svg = mermaidSvgs[0];
-                
-                // Force multiple height methods
-                svg.setAttribute('height', svgHeight);
-                svg.style.height = svgHeight + 'px';
-                svg.style.minHeight = svgHeight + 'px';
-                svg.style.maxHeight = svgHeight + 'px';
-                
-                // Modify viewBox to force height
-                const currentViewBox = svg.getAttribute('viewBox') || '0 0 800 600';
-                const parts = currentViewBox.split(' ');
-                const newViewBox = `${parts[0]} ${parts[1]} ${parts[2]} ${svgHeight}`;
-                svg.setAttribute('viewBox', newViewBox);
-                
-                // Add inline style to SVG
-                if (!svg.querySelector('style[data-height-forced]')) {
-                    const style = document.createElement('style');
-                    style.setAttribute('data-height-forced', 'true');
-                    style.textContent = `
-                        svg { height: ${svgHeight}px !important; min-height: ${svgHeight}px !important; max-height: ${svgHeight}px !important; }
-                        .mermaid { height: ${svgHeight}px !important; min-height: ${svgHeight}px !important; max-height: ${svgHeight}px !important; }
-                    `;
-                    svg.insertBefore(style, svg.firstChild);
-                }
-                
-                console.log(`Aggressively forced SVG height to: ${svgHeight}px`);
-            }
-
-            // Apply CSS styles with precise diagram height
-            const isScaled = currentScale > 1.0;
-            
-            const style = document.createElement('style');
-            style.id = 'mermaid-scale-override';
-            style.textContent = `
-                .tab-pane.active .mermaid {
-                    transform: scale(${currentScale});
-                    transform-origin: ${isScaled ? 'center center' : 'top left'};
-                    transition: transform 0.3s ease;
-                    width: 100%;
-                    height: ${svgHeight}px !important;
-                    overflow: visible;
-                }
-                
-                .tab-pane.active .mermaid svg {
-                    width: 100% !important;
-                    height: 100% !important;
-                    display: block !important;
-                }
-                
-                .tab-pane.active {
-                    overflow: auto;
-                    max-height: 90vh;
-                }
-                
-                .tab-pane.active .mermaid svg text {
-                    font-size: ${16 * currentScale}px !important;
-                }
-                
-                .tab-pane.active .mermaid .node text {
-                    font-size: ${16 * currentScale}px !important;
-                }
-                
-                .tab-pane.active .mermaid .edgeLabel text {
-                    font-size: ${16 * currentScale}px !important;
-                }
-                
-                .tab-pane.active .mermaid .cluster text {
-                    font-size: ${16 * currentScale}px !important;
-                }
-                
-                .tab-pane.active .mermaid .title text {
-                    font-size: ${18 * currentScale}px !important;
-                }
-                
-                .tab-pane.active .mermaid g.node > text {
-                    font-size: ${16 * currentScale}px !important;
-                }
-                
-                .tab-pane.active .mermaid g.edgeLabel > text {
-                    font-size: ${16 * currentScale}px !important;
-                }
-            `;
-            
-            // Remove old style if exists
-            const oldStyle = document.getElementById('mermaid-scale-override');
-            if (oldStyle) {
-                oldStyle.remove();
-            }
-            
-            // Add new style
-            document.head.appendChild(style);
-            
-            console.log(`Applied scale: ${currentScale}, svg height: ${svgHeight}px, initial: ${isInitialLoad}, centered: ${isScaled}`);
-        }
-
-        function resetScale() {
-            isInitialLoad = false; // Reset initial load flag
-            currentScale = 1.0;
-            updateMermaidScale();
-            updateScaleDisplay();
-        }
-
-        function updateScaleDisplay() {
-            const display = document.querySelector('.scale-display');
-            if (display) {
-                display.textContent = Math.round(currentScale * 100) + '%';
-            }
-        }
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Mermaid
-            mermaid.initialize({ 
-                startOnLoad: false, 
-                securityLevel: 'loose', 
-                theme: 'default',
-                themeVariables: {
-                    primaryColor: '#667eea',
-                    primaryTextColor: '#333',
-                    primaryBorderColor: '#667eea',
-                    lineColor: '#667eea',
-                    secondaryColor: '#764ba2',
-                    tertiaryColor: '#f8f9fa',
-                    fontSize: '16px'
-                },
-                flowchart: {
-                    useMaxWidth: true,
-                    htmlLabels: true,
-                    curve: 'basis'
-                }
-            });
-            
-            // Show first tab
-            showTab({ currentTarget: document.querySelector('.nav-tab.active') }, 'overview');
-            
-            // Initialize scale display
-            updateScaleDisplay();
-        });
-    </script>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <header class="header">
             <h1>🏥 Personal Health OS</h1>
             <p>Personal Health Management System - Architecture and Data Flows</p>
         </header>
         <nav class="nav-tabs">
-            <button class="nav-tab active" onclick="showTab(event, 'overview')">System Architecture</button>
-            <button class="nav-tab" onclick="showTab(event, 'microservices')">Microservices</button>
-            <button class="nav-tab" onclick="showTab(event, 'dataflow')">Data Flows</button>
-            <button class="nav-tab" onclick="showTab(event, 'database')">Database</button>
-            <button class="nav-tab" onclick="showTab(event, 'security')">Security</button>
-            <button class="nav-tab" onclick="showTab(event, 'deployment')">Deployment</button>
-            <button class="nav-tab" onclick="showTab(event, 'performance')">Performance</button>
-            <button class="nav-tab" onclick="showTab(event, 'integration')">Integrations</button>
+            <button class="nav-tab active" data-tab="overview">System Architecture</button>
+            <button class="nav-tab" data-tab="microservices">Microservices</button>
+            <button class="nav-tab" data-tab="dataflow">Data Flows</button>
+            <button class="nav-tab" data-tab="database">Database</button>
+            <button class="nav-tab" data-tab="security">Security</button>
+            <button class="nav-tab" data-tab="deployment">Deployment</button>
+            <button class="nav-tab" data-tab="performance">Performance</button>
+            <button class="nav-tab" data-tab="integration">Integrations</button>
         </nav>
 
-        <!-- Tab content -->
         <main class="content">
             <!-- System overview -->
             <section id="overview" class="tab-pane active">
-                <h2>System Architecture</h2>
-                <div class="scale-controls">
-                    <button class="scale-btn" onclick="changeScale(-0.1)">−</button>
-                    <span class="scale-display">100%</span>
-                    <button class="scale-btn" onclick="changeScale(0.1)">+</button>
-                    <button class="scale-btn" onclick="resetScale()">⟲</button>
-                </div>
-                <div class="mermaid" data-original-definition="graph TB
-    subgraph &quot;Client Applications&quot;
-        A[Mobile App] 
-        B[Web Client]
-        C[Desktop App]
-    end
-    
-    subgraph &quot;API Layer&quot;
-        D[API Gateway]
-    end
-    
-    subgraph &quot;Event Bus&quot;
-        E[NATS Event Bus]
-    end
-    
-    subgraph &quot;Microservices&quot;
-        F[Timeline Service]
-        G[Document Processor]
-        H[AI Report Service]
-        I[Doctor Access]
-        J[Patient Management]
-        K[Appointment Scheduling]
-        L[Billing &amp; Invoicing]
-        M[Licence Management]
-        N[Notification Service]
-        O[Reporting Service]
-    end
-    
-    subgraph &quot;Database&quot;
-        P[PostgreSQL]
-        Q[Redis Cache]
-        R[Object Storage]
-    end
-    
-    A --> D
-    B --> D
-    C --> D
-    D --> E
-    E --> F
-    E --> G
-    E --> H
-    E --> I
-    E --> J
-    E --> K
-    E --> L
-    E --> M
-    E --> N
-    E --> O
-    F --> P
-    G --> P
-    H --> P
-    I --> P
-    J --> P
-    K --> P
-    L --> P
-    M --> P
-    N --> P
-    O --> P
-    F --> Q
-    G --> R
-    H --> P">graph TB
+                <div class="diagram-container">
+                    <div class="scale-controls">
+                        <button class="scale-btn" data-scale-delta="-0.1">−</button>
+                        <span class="scale-display">100%</span>
+                        <button class="scale-btn" data-scale-delta="0.1">+</button>
+                        <button class="scale-btn" data-reset-scale>⟲</button>
+                    </div>
+                    <div class="mermaid-wrapper">
+                        <div class="mermaid">graph TB
     subgraph "Client Applications"
         A[Mobile App] 
         B[Web Client]
@@ -690,174 +359,33 @@
     F --> Q
     G --> R
     H --> P</div>
+                    </div>
+                </div>
 
                 <div class="service-grid">
                     <div class="service-card">
                         <h3>🚪 API Gateway</h3>
                         <p>Request routing, authentication, validation</p>
-                        <div class="tech-stack">
-                            <h4>Technologies:</h4>
-                            <ul>
-                                <li>• Rust + Axum</li>
-                                <li>• JWT Authentication</li>
-                                <li>• OpenTelemetry</li>
-                                <li>• Tower Middleware</li>
-                            </ul>
-                        </div>
+                        <div class="tech-stack"><h4>Technologies:</h4><ul><li>• Rust + Axum</li><li>• JWT Authentication</li><li>• OpenTelemetry</li><li>• Tower Middleware</li></ul></div>
                     </div>
-                    
-                    <div class="service-card">
-                        <h3>📅 Timeline Service</h3>
-                        <p>Event aggregation, timeline construction</p>
-                        <div class="tech-stack">
-                            <h4>Technologies:</h4>
-                            <ul>
-                                <li>• Rust + Tokio</li>
-                                <li>• PostgreSQL</li>
-                                <li>• Redis Cache</li>
-                                <li>• Event Sourcing</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>📄 Document Processor</h3>
-                        <p>OCR, medical entity extraction, storage</p>
-                        <div class="tech-stack">
-                            <h4>Technologies:</h4>
-                            <ul>
-                                <li>• Tesseract OCR</li>
-                                <li>• AWS S3/Cloudflare R2</li>
-                                <li>• Medical NLP</li>
-                                <li>• Parallel Processing</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>🤖 AI Report Service</h3>
-                        <p>LLM-powered report generation, RAG</p>
-                        <div class="tech-stack">
-                            <h4>Technologies:</h4>
-                            <ul>
-                                <li>• OpenAI GPT-4/3.5</li>
-                                <li>• Ollama (Local Models)</li>
-                                <li>• Vector Embeddings</li>
-                                <li>• RAG Pipeline</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>👨‍⚕️ Doctor Access</h3>
-                        <p>Doctor authentication, patient access control</p>
-                        <div class="tech-stack">
-                            <h4>Technologies:</h4>
-                            <ul>
-                                <li>• Rust + Actix</li>
-                                <li>• Role-based Access</li>
-                                <li>• HIPAA Compliance</li>
-                                <li>• Audit Logging</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>👥 Patient Management</h3>
-                        <p>Patient management, medical records</p>
-                        <div class="tech-stack">
-                            <h4>Technologies:</h4>
-                            <ul>
-                                <li>• Rust + Actix</li>
-                                <li>• PostgreSQL</li>
-                                <li>• HIPAA Compliance</li>
-                                <li>• EMR Management</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>📋 Appointment Scheduling</h3>
-                        <p>Appointment booking, calendars, reminders</p>
-                        <div class="tech-stack">
-                            <h4>Technologies:</h4>
-                            <ul>
-                                <li>• Rust + Tokio</li>
-                                <li>• Calendar Integration</li>
-                                <li>• Email/SMS Reminders</li>
-                                <li>• Real-time Sync</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>💰 Billing & Invoicing</h3>
-                        <p>Payment processing, invoice generation</p>
-                        <div class="tech-stack">
-                            <h4>Technologies:</h4>
-                            <ul>
-                                <li>• Stripe Integration</li>
-                                <li>• Invoice Generation</li>
-                                <li>• Payment Processing</li>
-                                <li>• Financial Reporting</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>🔐 Licence Management</h3>
-                        <p>License validation, compliance tracking</p>
-                        <div class="tech-stack">
-                            <h4>Technologies:</h4>
-                            <ul>
-                                <li>• License Validation</li>
-                                <li>• Compliance Tracking</li>
-                                <li>• Audit Reports</li>
-                                <li>• Regulatory Compliance</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>📢 Notification Service</h3>
-                        <p>Email, SMS, push notifications</p>
-                        <div class="tech-stack">
-                            <h4>Technologies:</h4>
-                            <ul>
-                                <li>• SendGrid/SES</li>
-                                <li>• SMS Gateway</li>
-                                <li>• Push Notifications</li>
-                                <li>• Message Queuing</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>📊 Reporting Service</h3>
-                        <p>Analytics, reports, dashboards</p>
-                        <div class="tech-stack">
-                            <h4>Technologies:</h4>
-                            <ul>
-                                <li>• Grafana Integration</li>
-                                <li>• Real-time Analytics</li>
-                                <li>• Custom Reports</li>
-                                <li>• Data Visualization</li>
-                            </ul>
-                        </div>
-                    </div>
+                    <div class="service-card"><h3>📅 Timeline Service</h3><p>Event aggregation, timeline construction</p><div class="tech-stack"><h4>Technologies:</h4><ul><li>• Rust + Tokio</li><li>• PostgreSQL</li><li>• Redis Cache</li><li>• Event Sourcing</li></ul></div></div>
+                    <div class="service-card"><h3>📄 Document Processor</h3><p>OCR, medical entity extraction, storage</p><div class="tech-stack"><h4>Technologies:</h4><ul><li>• Tesseract OCR</li><li>• AWS S3/Cloudflare R2</li><li>• Medical NLP</li><li>• Parallel Processing</li></ul></div></div>
+                    <div class="service-card"><h3>🤖 AI Report Service</h3><p>LLM-powered report generation, RAG</p><div class="tech-stack"><h4>Technologies:</h4><ul><li>• OpenAI GPT-4/3.5</li><li>• Ollama (Local Models)</li><li>• Vector Embeddings</li><li>• RAG Pipeline</li></ul></div></div>
+                    <div class="service-card"><h3>👨‍⚕️ Doctor Access</h3><p>Doctor authentication, patient access control</p><div class="tech-stack"><h4>Technologies:</h4><ul><li>• Rust + Actix</li><li>• Role-based Access</li><li>• HIPAA Compliance</li><li>• Audit Logging</li></ul></div></div>
+                    <div class="service-card"><h3>👥 Patient Management</h3><p>Patient management, medical records</p><div class="tech-stack"><h4>Technologies:</h4><ul><li>• Rust + Actix</li><li>• PostgreSQL</li><li>• HIPAA Compliance</li><li>• EMR Management</li></ul></div></div>
+                    <div class="service-card"><h3>📋 Appointment Scheduling</h3><p>Appointment booking, calendars, reminders</p><div class="tech-stack"><h4>Technologies:</h4><ul><li>• Rust + Tokio</li><li>• Calendar Integration</li><li>• Email/SMS Reminders</li><li>• Real-time Sync</li></ul></div></div>
+                    <div class="service-card"><h3>💰 Billing & Invoicing</h3><p>Payment processing, invoice generation</p><div class="tech-stack"><h4>Technologies:</h4><ul><li>• Stripe Integration</li><li>• Invoice Generation</li><li>• Payment Processing</li><li>• Financial Reporting</li></ul></div></div>
+                    <div class="service-card"><h3>🔐 Licence Management</h3><p>License validation, compliance tracking</p><div class="tech-stack"><h4>Technologies:</h4><ul><li>• License Validation</li><li>• Compliance Tracking</li><li>• Audit Reports</li><li>• Regulatory Compliance</li></ul></div></div>
+                    <div class="service-card"><h3>📢 Notification Service</h3><p>Email, SMS, push notifications</p><div class="tech-stack"><h4>Technologies:</h4><ul><li>• SendGrid/SES</li><li>• SMS Gateway</li><li>• Push Notifications</li><li>• Message Queuing</li></ul></div></div>
+                    <div class="service-card"><h3>📊 Reporting Service</h3><p>Analytics, reports, dashboards</p><div class="tech-stack"><h4>Technologies:</h4><ul><li>• Grafana Integration</li><li>• Real-time Analytics</li><li>• Custom Reports</li><li>• Data Visualization</li></ul></div></div>
                 </div>
             </section>
 
-            <!-- Микросервисы -->
+            <!-- Microservices tab -->
             <section id="microservices" class="tab-pane">
-                <h2>Архитектура микросервисов</h2>
-                <div class="scale-controls">
-                    <button class="scale-btn" onclick="changeScale(-0.1)">−</button>
-                    <span class="scale-display">100%</span>
-                    <button class="scale-btn" onclick="changeScale(0.1)">+</button>
-                    <button class="scale-btn" onclick="resetScale()">⟲</button>
-                </div>
-                <div class="mermaid">graph LR
+                <div class="diagram-container">
+                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
+                    <div class="mermaid-wrapper"><div class="mermaid">graph LR
     subgraph "Основные сервисы"
         A[API Gateway<br/>8080]
         B[Timeline Service<br/>8081]
@@ -865,19 +393,16 @@
         D[AI Report Service<br/>8083]
         E[Doctor Access<br/>8084]
     end
-    
     subgraph "Управление больницей"
         F[Patient Management<br/>8085]
         G[Appointment Scheduling<br/>8086]
         H[Billing & Invoicing<br/>8087]
     end
-    
     subgraph "Поддерживающие сервисы"
         I[Licence Management<br/>8088]
         J[Notification Service<br/>8089]
         K[Reporting Service<br/>8090]
     end
-    
     A --> B
     A --> C
     A --> D
@@ -888,109 +413,19 @@
     A --> I
     A --> J
     A --> K
-    
     B -.-> F
     C -.-> F
     D -.-> F
-    E -.-> F</div>
-
-                <div class="service-grid">
-                    <div class="service-card">
-                        <h3>🚪 API Gateway (8080)</h3>
-                        <p>Маршрутизация запросов, аутентификация, валидация</p>
-                        <div class="tech-stack">
-                            <h4>Технологии:</h4>
-                            <ul>
-                                <li>• Rust + Axum</li>
-                                <li>• JWT Authentication</li>
-                                <li>• OpenTelemetry</li>
-                                <li>• Tower Middleware</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>📅 Timeline Service (8081)</h3>
-                        <p>Агрегация событий, построение временной шкалы</p>
-                        <div class="tech-stack">
-                            <h4>Технологии:</h4>
-                            <ul>
-                                <li>• Rust + Tokio</li>
-                                <li>• PostgreSQL</li>
-                                <li>• Redis Cache</li>
-                                <li>• Event Sourcing</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>📄 Document Processor (8082)</h3>
-                        <p>OCR, извлечение медицинских сущностей, хранение</p>
-                        <div class="tech-stack">
-                            <h4>Технологии:</h4>
-                            <ul>
-                                <li>• Tesseract OCR</li>
-                                <li>• AWS S3/Cloudflare R2</li>
-                                <li>• Medical NLP</li>
-                                <li>• Parallel Processing</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>🤖 AI Report Service (8083)</h3>
-                        <p>Генерация отчетов с помощью LLM, RAG</p>
-                        <div class="tech-stack">
-                            <h4>Технологии:</h4>
-                            <ul>
-                                <li>• OpenAI GPT-4/3.5</li>
-                                <li>• Ollama (Local Models)</li>
-                                <li>• Vector Embeddings</li>
-                                <li>• RAG Pipeline</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>👨‍⚕️ Patient Management (8085)</h3>
-                        <p>Управление пациентами, медицинские записи</p>
-                        <div class="tech-stack">
-                            <h4>Технологии:</h4>
-                            <ul>
-                                <li>• Rust + Actix</li>
-                                <li>• PostgreSQL</li>
-                                <li>• HIPAA Compliance</li>
-                                <li>• EMR Management</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>📋 Appointment Scheduling (8086)</h3>
-                        <p>Запись на прием, календари, напоминания</p>
-                        <div class="tech-stack">
-                            <h4>Технологии:</h4>
-                            <ul>
-                                <li>• Rust + Tokio</li>
-                                <li>• Calendar Integration</li>
-                                <li>• Email/SMS Reminders</li>
-                                <li>• Real-time Sync</li>
-                            </ul>
-                        </div>
-                    </div>
+    E -.-> F</div></div>
                 </div>
+                <div class="service-grid"><div class="service-card"><h3>🚪 API Gateway (8080)</h3><p>Маршрутизация запросов, аутентификация</p><div class="tech-stack"><h4>Технологии:</h4><ul><li>• Rust + Axum</li><li>• JWT Authentication</li><li>• OpenTelemetry</li></ul></div></div></div>
             </section>
 
-            <!-- Потоки данных -->
+            <!-- Data Flows tab -->
             <section id="dataflow" class="tab-pane">
-                <h2>Потоки данных в системе</h2>
-                <div class="scale-controls">
-                    <button class="scale-btn" onclick="changeScale(-0.1)">−</button>
-                    <span class="scale-display">100%</span>
-                    <button class="scale-btn" onclick="changeScale(0.1)">+</button>
-                    <button class="scale-btn" onclick="resetScale()">⟲</button>
-                </div>
-                <div class="mermaid">sequenceDiagram
+                <div class="diagram-container">
+                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
+                    <div class="mermaid-wrapper"><div class="mermaid">sequenceDiagram
     participant C as Клиент
     participant G as API Gateway
     participant B as NATS Bus
@@ -1031,536 +466,393 @@
     A->>A: LLM генерация
     A->>D: Сохранение отчета
     A-->>G: Сгенерированный отчет
-    G-->>C: PDF/HTML отчет</div>
-
-                <div class="mermaid">graph TB
+    G-->>C: PDF/HTML отчет</div></div>
+                </div>
+                <div class="mermaid-wrapper"><div class="mermaid">graph TB
     subgraph "Event Sourcing Pattern"
         A[Client Request] --> B[API Gateway]
         B --> C[Event Validation]
         C --> D[NATS Event Bus]
         D --> E[Event Handlers]
-        E --> F[PostgreSQL<br/>medical_events]
+        E --> F[PostgreSQL medical_events]
         F --> G[Read Models]
-        G --> H[Cache Layer<br/>Redis]
+        G --> H[Cache Layer Redis]
     end
-    
-    subgraph "CQRS Pattern"
-        I[Commands<br/>Write Operations] --> J[Event Store]
-        K[Queries<br/>Read Operations] --> L[Read Models]
-        J --> M[Event Sourcing]
-        L --> N[Optimized Queries]
-    end
-    
-    H --> O[Client Response]</div>
+    H --> O[Client Response]</div></div>
             </section>
 
-            <!-- База данных -->
+            <!-- Database tab -->
             <section id="database" class="tab-pane">
-                <h2>Database Architecture</h2>
-                <div class="scale-controls">
-                    <button class="scale-btn" onclick="changeScale(-0.1)">−</button>
-                    <span class="scale-display">100%</span>
-                    <button class="scale-btn" onclick="changeScale(0.1)">+</button>
-                    <button class="scale-btn" onclick="resetScale()">⟲</button>
-                </div>
-                <div class="mermaid">graph TB
+                <div class="diagram-container">
+                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
+                    <div class="mermaid-wrapper"><div class="mermaid">graph TB
     subgraph "PostgreSQL - Основная БД"
-        A[medical_events<br/>Event Sourcing]
-        B[user_profiles<br/>Пользователи]
-        C[hospital_patients<br/>Пациенты]
-        D[appointments<br/>Записи]
-        E[licences<br/>Лицензии]
+        A[medical_events]
+        B[user_profiles]
+        C[hospital_patients]
+        D[appointments]
+        E[licences]
     end
-    
     subgraph "Redis Cache"
         F[Timeline Cache]
         G[Session Cache]
-        H[Rate Limiting]
     end
-    
     subgraph "Object Storage"
         I[Medical Documents]
         J[Images & DICOM]
-        K[Backups]
     end
-    
     A --> F
     B --> G
     C --> F
-    D --> H
-    E --> G
-    A --> I
-    C --> J
-    A --> K</div>
-
-                <div class="mermaid">erDiagram
-    medical_events {
-        uuid id PK
-        uuid patient_id FK
-        varchar event_type
-        timestamp timestamp
-        jsonb payload
-        varchar source
-        integer version
-        timestamp created_at
-        timestamp updated_at
-    }
-    
-    user_profiles {
-        uuid id PK
-        varchar email UK
-        varchar phone
-        jsonb profile_data
-        timestamp created_at
-        timestamp updated_at
-    }
-    
-    hospital_patients {
-        uuid id PK
-        uuid profile_id FK
-        varchar patient_id UK
-        varchar blood_type
-        varchar emergency_contact_name
-        varchar emergency_contact_phone
-        varchar insurance_provider
-        timestamp admission_date
-        timestamp discharge_date
-        varchar status
-    }
-    
-    appointments {
-        uuid id PK
-        uuid patient_id FK
-        uuid doctor_id
-        uuid facility_id
-        varchar appointment_type
-        timestamp start_time
-        timestamp end_time
-        varchar status
-        text notes
-        boolean reminder_sent
-    }
-    
-    licences {
-        uuid id PK
-        varchar licence_key UK
-        varchar customer_name
-        varchar customer_email
-        varchar product_name
-        varchar tier
-        integer max_users
-        timestamp expiry_date
-        boolean is_active
-    }
-    
-    user_profiles ||--o{ medical_events : "generates"
-    user_profiles ||--|| hospital_patients : "extends"
-    hospital_patients ||--o{ appointments : "has"
-    hospital_patients ||--o{ medical_events : "has"</div>
-
-                <div class="service-grid">
-                    <div class="service-card">
-                        <h3>🗄️ PostgreSQL</h3>
-                        <p>Основная база данных с поддержкой JSONB и временных меток</p>
-                        <div class="tech-stack">
-                            <h4>Особенности:</h4>
-                            <ul>
-                                <li>• Event Sourcing таблицы</li>
-                                <li>• Индексы по patient_id, timestamp</li>
-                                <li>• Партиционирование по датам</li>
-                                <li>• Репликация master-slave</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>⚡ Redis Cache</h3>
-                        <p>Кэширование временных шкал и сессий</p>
-                        <div class="tech-stack">
-                            <h4>Использование:</h4>
-                            <ul>
-                                <li>• Timeline кэширование</li>
-                                <li>• JWT сессии</li>
-                                <li>• Rate limiting</li>
-                                <li>• Real-time данные</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>📦 Object Storage</h3>
-                        <p>Хранение медицинских документов и изображений</p>
-                        <div class="tech-stack">
-                            <h4>Хранилище:</h4>
-                            <ul>
-                                <li>• AWS S3 / Cloudflare R2</li>
-                                <li>• PDF документы</li>
-                                <li>• Медицинские изображения</li>
-                                <li>• Резервные копии</li>
-                            </ul>
-                        </div>
-                    </div>
+    D --> G</div></div>
                 </div>
+                <div class="mermaid-wrapper"><div class="mermaid">erDiagram
+    medical_events { uuid id PK uuid patient_id FK varchar event_type timestamp timestamp jsonb payload }
+    user_profiles { uuid id PK varchar email UK varchar phone }
+    hospital_patients { uuid id PK uuid profile_id FK varchar patient_id UK }
+    user_profiles ||--o{ medical_events : generates
+    user_profiles ||--|| hospital_patients : extends</div></div>
             </section>
 
-            <!-- Безопасность -->
+            <!-- Security tab -->
             <section id="security" class="tab-pane">
-                <h2>Архитектура безопасности</h2>
-                <div class="scale-controls">
-                    <button class="scale-btn" onclick="changeScale(-0.1)">−</button>
-                    <span class="scale-display">100%</span>
-                    <button class="scale-btn" onclick="changeScale(0.1)">+</button>
-                    <button class="scale-btn" onclick="resetScale()">⟲</button>
-                </div>
-                <div class="mermaid">graph TB
+                <div class="diagram-container">
+                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
+                    <div class="mermaid-wrapper"><div class="mermaid">graph TB
     subgraph "Authentication Layer"
         A[Client] --> B[JWT Token]
-        B --> C[API Gateway<br/>Auth Middleware]
+        B --> C[API Gateway Auth]
         C --> D[Token Validation]
         D --> E[Role Check]
     end
-    
-    subgraph "Authorization Layer"
-        F[RBAC - Role Based Access]
+    subgraph "Authorization"
+        F[RBAC]
         G[Patient Role]
         H[Doctor Role]
         I[Admin Role]
     end
-    
-    subgraph "Data Protection"
-        J[Encryption at Rest<br/>PostgreSQL TDE]
-        K[Encryption in Transit<br/>TLS 1.3]
-        L[Data Masking<br/>Logs & Monitoring]
-    end
-    
-    subgraph "Compliance"
-        M[HIPAA Compliance]
-        N[GDPR Compliance]
-        O[Audit Logging]
-        P[Data Retention Policies]
-    end
-    
     E --> F
-    F --> G
-    F --> H
-    F --> I
-    G --> J
-    H --> J
-    I --> J
-    J --> K
-    K --> L
-    L --> M
-    M --> N
-    N --> O
-    O --> P</div>
-
-                <div class="service-grid">
-                    <div class="service-card">
-                        <h3>🔐 Аутентификация</h3>
-                        <p>JWT токены с обновлением и отозванием</p>
-                        <div class="tech-stack">
-                            <h4>Механизмы:</h4>
-                            <ul>
-                                <li>• JWT Access Tokens (24ч)</li>
-                                <li>• Refresh Tokens (7д)</li>
-                                <li>• Многофакторная аутентификация</li>
-                                <li>• OAuth2 / OpenID Connect</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>🛡️ Авторизация</h3>
-                        <p>Ролевая модель доступа к данным</p>
-                        <div class="tech-stack">
-                            <h4>Роли:</h4>
-                            <ul>
-                                <li>• Patient - доступ к своим данным</li>
-                                <li>• Doctor - доступ к пациентам</li>
-                                <li>• Admin - полное управление</li>
-                                <li>• Scope-based доступ</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>🔒 Шифрование</h3>
-                        <p>Защита данных на всех уровнях</p>
-                        <div class="tech-stack">
-                            <h4>Уровни:</h4>
-                            <ul>
-                                <li>• TDE для PostgreSQL</li>
-                                <li>• TLS 1.3 для трафика</li>
-                                <li>• AES-256 для файлов</li>
-                                <li>• Маскирование в логах</li>
-                            </ul>
-                        </div>
-                    </div>
+    F --> G & H & I</div></div>
                 </div>
             </section>
 
-            <!-- Развертывание -->
+            <!-- Deployment tab -->
             <section id="deployment" class="tab-pane">
-                <h2>Архитектура развертывания</h2>
-                <div class="scale-controls">
-                    <button class="scale-btn" onclick="changeScale(-0.1)">−</button>
-                    <span class="scale-display">100%</span>
-                    <button class="scale-btn" onclick="changeScale(0.1)">+</button>
-                    <button class="scale-btn" onclick="resetScale()">⟲</button>
-                </div>
-                <div class="mermaid">graph TB
-    subgraph "CI/CD Pipeline"
+                <div class="diagram-container">
+                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
+                    <div class="mermaid-wrapper"><div class="mermaid">graph TB
+    subgraph "CI/CD"
         A[Git Push] --> B[GitHub Actions]
         B --> C[Build & Test]
-        C --> D[Security Scan]
-        D --> E[Docker Build]
-        E --> F[Push to Registry]
-        F --> G[Deploy to K8s]
+        C --> D[Docker Build]
+        D --> E[Push Registry]
+        E --> F[Deploy K8s]
     end
-    
-    subgraph "Kubernetes Cluster"
-        H[Ingress Controller]
+    subgraph "Kubernetes"
+        H[Ingress]
         I[API Gateway Pod]
         J[Service Pods]
-        K[Database StatefulSet]
-        L[Redis Deployment]
     end
-    
-    subgraph "Infrastructure"
-        M[Load Balancer]
-        N[Auto Scaling]
-        O[Monitoring Stack]
-        P[Logging Stack]
-    end
-    
-    G --> H
+    F --> H
     H --> I
-    I --> J
-    J --> K
-    J --> L
-    I --> M
-    J --> N
-    K --> O
-    L --> P</div>
-
-                <div class="service-grid">
-                    <div class="service-card">
-                        <h3>🐳 Контейнеризация</h3>
-                        <p>Docker контейнеры с multi-stage builds</p>
-                        <div class="tech-stack">
-                            <h4>Оптимизация:</h4>
-                            <ul>
-                                <li>• Alpine Linux base images</li>
-                                <li>• Multi-stage builds</li>
-                                <li>• Health checks</li>
-                                <li>• Resource limits</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>☸️ Kubernetes</h3>
-                        <p>Оркестрация контейнеров и сервисов</p>
-                        <div class="tech-stack">
-                            <h4>Компоненты:</h4>
-                            <ul>
-                                <li>• Deployments & Services</li>
-                                <li>• ConfigMaps & Secrets</li>
-                                <li>• Ingress Controllers</li>
-                                <li>• HPA для масштабирования</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>📊 Мониторинг</h3>
-                        <p>Полная наблюдаемость системы</p>
-                        <div class="tech-stack">
-                            <h4>Стек:</h4>
-                            <ul>
-                                <li>• Prometheus + Grafana</li>
-                                <li>• Jaeger для трейсинга</li>
-                                <li>• ELK Stack для логов</li>
-                                <li>• OpenTelemetry</li>
-                            </ul>
-                        </div>
-                    </div>
+    I --> J</div></div>
                 </div>
             </section>
 
-            <!-- Производительность -->
+            <!-- Performance tab -->
             <section id="performance" class="tab-pane">
-                <h2>Оптимизация производительности</h2>
-                <div class="scale-controls">
-                    <button class="scale-btn" onclick="changeScale(-0.1)">−</button>
-                    <span class="scale-display">100%</span>
-                    <button class="scale-btn" onclick="changeScale(0.1)">+</button>
-                    <button class="scale-btn" onclick="resetScale()">⟲</button>
-                </div>
-                <div class="mermaid">graph LR
-    subgraph "Frontend Optimization"
-        A[React/Vue Apps] --> B[Code Splitting]
-        B --> C[Lazy Loading]
-        C --> D[CDN Delivery]
+                <div class="diagram-container">
+                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
+                    <div class="mermaid-wrapper"><div class="mermaid">graph LR
+    subgraph "Frontend"
+        A[React/Vue] --> B[Code Splitting]
+        B --> C[CDN Delivery]
     end
-    
-    subgraph "Backend Optimization"
-        E[API Gateway] --> F[Connection Pooling]
-        F --> G[Caching Strategy]
-        G --> H[Async Processing]
+    subgraph "Backend"
+        D[API Gateway] --> E[Connection Pool]
+        E --> F[Caching]
+        F --> G[Async Processing]
     end
-    
-    subgraph "Database Optimization"
-        I[PostgreSQL] --> J[Index Optimization]
-        J --> K[Query Optimization]
-        K --> L[Read Replicas]
-    end
-    
-    subgraph "Performance Metrics"
-        M[Response Time <200ms]
-        N[Page Load <2s]
-        O[Database Query <100ms]
-        P[Memory Usage <70%]
-    end
-    
-    D --> E
-    H --> I
-    L --> M
-    M --> N
-    N --> O
-    O --> P</div>
-
-                <div class="service-grid">
-                    <div class="service-card">
-                        <h3>⚡ Кэширование</h3>
-                        <p>Многоуровневая стратегия кэширования</p>
-                        <div class="tech-stack">
-                            <h4>Уровни:</h4>
-                            <ul>
-                                <li>• CDN для статических ресурсов</li>
-                                <li>• Redis для данных</li>
-                                <li>• Application cache</li>
-                                <li>• Database query cache</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>🔄 Асинхронность</h3>
-                        <p>Асинхронная обработка запросов</p>
-                        <div class="tech-stack">
-                            <h4>Паттерны:</h4>
-                            <ul>
-                                <li>• Tokio async runtime</li>
-                                <li>• Event-driven architecture</li>
-                                <li>• Background job processing</li>
-                                <li>• Streaming responses</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>📈 Масштабирование</h3>
-                        <p>Горизонтальное масштабирование</p>
-                        <div class="tech-stack">
-                            <h4>Стратегии:</h4>
-                            <ul>
-                                <li>• Stateless services</li>
-                                <li>• Load balancing</li>
-                                <li>• Database sharding</li>
-                                <li>• Auto-scaling policies</li>
-                            </ul>
-                        </div>
-                    </div>
+    C --> D
+    G --> H[Database Replicas]</div></div>
                 </div>
             </section>
 
-            <!-- Интеграции -->
+            <!-- Integration tab -->
             <section id="integration" class="tab-pane">
-                <h2>Внешние интеграции</h2>
-                <div class="scale-controls">
-                    <button class="scale-btn" onclick="changeScale(-0.1)">−</button>
-                    <span class="scale-display">100%</span>
-                    <button class="scale-btn" onclick="changeScale(0.1)">+</button>
-                    <button class="scale-btn" onclick="resetScale()">⟲</button>
-                </div>
-                <div class="mermaid">graph TB
+                <div class="diagram-container">
+                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
+                    <div class="mermaid-wrapper"><div class="mermaid">graph TB
     subgraph "Health OS Core"
         A[Timeline Service]
         B[Document Processor]
         C[AI Report Service]
     end
-    
-    subgraph "External Services"
-        D[Email Services<br/>SendGrid/SES]
-        E[SMS Services<br/>Twilio]
-        F[Payment Gateways<br/>Stripe/PayPal]
-        G[Medical APIs<br/>HL7/FHIR]
-        H[AI Models<br/>OpenAI/Ollama]
+    subgraph "External"
+        D[SendGrid/SES]
+        E[Twilio]
+        F[Stripe/PayPal]
+        G[OpenAI/Ollama]
     end
-    
-    subgraph "Third-party Systems"
-        I[EHR Systems]
-        J[Laboratory Systems]
-        K[Insurance APIs]
-        L[Pharmacy Systems]
-    end
-    
-    A --> D
-    A --> E
+    A --> D & E
     B --> G
-    B --> I
-    C --> H
-    C --> F
-    A --> J
-    B --> K
-    C --> L</div>
-
-                <div class="service-grid">
-                    <div class="service-card">
-                        <h3>📧 Коммуникации</h3>
-                        <p>Email, SMS и push уведомления</p>
-                        <div class="tech-stack">
-                            <h4>Сервисы:</h4>
-                            <ul>
-                                <li>• SendGrid / AWS SES</li>
-                                <li>• Twilio для SMS</li>
-                                <li>• Firebase Push</li>
-                                <li>• WebSocket для real-time</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>💳 Платежи</h3>
-                        <p>Интеграция с платежными системами</p>
-                        <div class="tech-stack">
-                            <h4>Провайдеры:</h4>
-                            <ul>
-                                <li>• Stripe Payments</li>
-                                <li>• PayPal Integration</li>
-                                <li>• Apple/Google Pay</li>
-                                <li>• Insurance billing APIs</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="service-card">
-                        <h3>🏥 Медицинские системы</h3>
-                        <p>Интеграция с EHR и лабораториями</p>
-                        <div class="tech-stack">
-                            <h4>Стандарты:</h4>
-                            <ul>
-                                <li>• HL7/FHIR Protocols</li>
-                                <li>• DICOM для изображений</li>
-                                <li>• Laboratory Information Systems</li>
-                                <li>• Pharmacy Management Systems</li>
-                            </ul>
-                        </div>
-                    </div>
+    C --> F</div></div>
                 </div>
             </section>
         </main>
     </div>
+
+    <script>
+        // Global state
+        let currentScale = 1.0;
+        let activeTabId = 'overview';
+
+        // Auto-resize mermaid containers based on SVG natural height
+        function adjustDiagramHeight(container) {
+            if (!container) return;
+            const svg = container.querySelector('.mermaid svg');
+            if (!svg) return;
+            
+            // Get natural SVG dimensions
+            const bbox = svg.getBBox ? svg.getBBox() : { width: 800, height: 400 };
+            const svgHeight = Math.max(200, bbox.height + 40);
+            
+            // Set wrapper to auto height
+            const wrapper = container.querySelector('.mermaid-wrapper');
+            if (wrapper) {
+                wrapper.style.height = 'auto';
+                wrapper.style.minHeight = 'auto';
+            }
+            
+            // Ensure SVG has no fixed height constraints
+            svg.style.height = 'auto';
+            svg.style.maxHeight = 'none';
+            svg.removeAttribute('height');
+            
+            console.log(`Adjusted height for diagram: ${svgHeight}px`);
+        }
+
+        // Apply scale transform to active diagram
+        function applyScale(scale) {
+            const activePane = document.querySelector('.tab-pane.active');
+            if (!activePane) return;
+            
+            const mermaidElements = activePane.querySelectorAll('.mermaid');
+            mermaidElements.forEach(mermaidElem => {
+                // Reset any existing transform
+                mermaidElem.style.transform = `scale(${scale})`;
+                mermaidElem.style.transformOrigin = 'center top';
+                // Ensure container can expand
+                const wrapper = mermaidElem.closest('.mermaid-wrapper');
+                if (wrapper) {
+                    wrapper.style.overflow = 'visible';
+                    wrapper.style.height = 'auto';
+                }
+            });
+            
+            // Update display
+            const scaleDisplay = activePane.querySelector('.scale-display');
+            if (scaleDisplay) {
+                scaleDisplay.textContent = Math.round(scale * 100) + '%';
+            }
+        }
+
+        // Reset scale and re-fit
+        function resetScale() {
+            currentScale = 1.0;
+            applyScale(currentScale);
+            // After reset, re-adjust heights
+            setTimeout(() => {
+                const activePane = document.querySelector('.tab-pane.active');
+                if (activePane) {
+                    const containers = activePane.querySelectorAll('.diagram-container');
+                    containers.forEach(adjustDiagramHeight);
+                }
+            }, 50);
+        }
+
+        function changeScale(delta) {
+            currentScale = Math.max(0.5, Math.min(2.0, currentScale + delta));
+            applyScale(currentScale);
+        }
+
+        // Initialize mermaid for all diagrams and adjust heights
+        async function initMermaidInTab(tabElement) {
+            const mermaidDivs = tabElement.querySelectorAll('.mermaid');
+            if (mermaidDivs.length === 0) return;
+            
+            // Run mermaid on all diagrams in this tab
+            try {
+                await mermaid.run({
+                    nodes: mermaidDivs,
+                    suppressErrors: true,
+                });
+                
+                // After rendering, adjust heights
+                setTimeout(() => {
+                    const containers = tabElement.querySelectorAll('.diagram-container');
+                    containers.forEach(adjustDiagramHeight);
+                    
+                    // Apply current scale if any
+                    if (currentScale !== 1.0) {
+                        applyScale(currentScale);
+                    }
+                }, 100);
+            } catch (err) {
+                console.warn("Mermaid render error:", err);
+            }
+        }
+
+        // Switch tabs
+        async function showTab(tabId) {
+            // Hide all panes
+            const allPanes = document.querySelectorAll('.tab-pane');
+            allPanes.forEach(pane => pane.classList.remove('active'));
+            
+            // Show selected pane
+            const targetPane = document.getElementById(tabId);
+            if (targetPane) {
+                targetPane.classList.add('active');
+                activeTabId = tabId;
+                
+                // Update active button
+                const buttons = document.querySelectorAll('.nav-tab');
+                buttons.forEach(btn => {
+                    if (btn.getAttribute('data-tab') === tabId) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+                
+                // Reset scale for new tab
+                currentScale = 1.0;
+                
+                // Initialize diagrams in this tab if not already rendered
+                const hasRendered = targetPane.getAttribute('data-rendered');
+                if (!hasRendered) {
+                    await initMermaidInTab(targetPane);
+                    targetPane.setAttribute('data-rendered', 'true');
+                } else {
+                    // Already rendered, just adjust heights
+                    setTimeout(() => {
+                        const containers = targetPane.querySelectorAll('.diagram-container');
+                        containers.forEach(adjustDiagramHeight);
+                        applyScale(currentScale);
+                    }, 50);
+                }
+                
+                // Also handle any new diagrams that might be added
+                const scaleDisplay = targetPane.querySelector('.scale-display');
+                if (scaleDisplay) {
+                    scaleDisplay.textContent = '100%';
+                }
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Tab switching
+            const tabs = document.querySelectorAll('.nav-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    const tabId = tab.getAttribute('data-tab');
+                    if (tabId) showTab(tabId);
+                });
+            });
+            
+            // Scale controls - delegated event handling
+            document.addEventListener('click', (e) => {
+                const target = e.target;
+                const activePane = document.querySelector('.tab-pane.active');
+                if (!activePane) return;
+                
+                // Find scale buttons within active pane or global
+                const deltaBtn = target.closest('[data-scale-delta]');
+                if (deltaBtn && activePane.contains(deltaBtn) || (deltaBtn && !deltaBtn.closest('.tab-pane'))) {
+                    const delta = parseFloat(deltaBtn.getAttribute('data-scale-delta'));
+                    if (!isNaN(delta)) {
+                        changeScale(delta);
+                    }
+                    return;
+                }
+                
+                const resetBtn = target.closest('[data-reset-scale]');
+                if (resetBtn && (activePane.contains(resetBtn) || !resetBtn.closest('.tab-pane'))) {
+                    resetScale();
+                    return;
+                }
+            });
+            
+            // Handle window resize - re-adjust heights
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    const activePane = document.querySelector('.tab-pane.active');
+                    if (activePane) {
+                        const containers = activePane.querySelectorAll('.diagram-container');
+                        containers.forEach(adjustDiagramHeight);
+                        applyScale(currentScale);
+                    }
+                }, 200);
+            });
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Configure mermaid
+            mermaid.initialize({
+                startOnLoad: false,
+                securityLevel: 'loose',
+                theme: 'base',
+                themeVariables: {
+                    primaryColor: '#667eea',
+                    primaryTextColor: '#333',
+                    primaryBorderColor: '#667eea',
+                    lineColor: '#667eea',
+                    secondaryColor: '#764ba2',
+                    tertiaryColor: '#f8f9fa',
+                    fontSize: '14px'
+                },
+                flowchart: {
+                    useMaxWidth: false,
+                    htmlLabels: true,
+                    curve: 'basis'
+                },
+                sequence: {
+                    useMaxWidth: false,
+                    diagramMarginX: 50,
+                    diagramMarginY: 10
+                }
+            });
+            
+            setupEventListeners();
+            
+            // Initial load - render first tab
+            await showTab('overview');
+        });
+        
+        // Also watch for mutations to catch any late-rendering issues
+        const observer = new MutationObserver((mutations) => {
+            const activePane = document.querySelector('.tab-pane.active');
+            if (activePane) {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList' || mutation.type === 'subtree') {
+                        const newSvgs = activePane.querySelectorAll('.mermaid svg:not([data-height-adjusted])');
+                        if (newSvgs.length > 0) {
+                            newSvgs.forEach(svg => svg.setAttribute('data-height-adjusted', 'true'));
+                            setTimeout(() => {
+                                const containers = activePane.querySelectorAll('.diagram-container');
+                                containers.forEach(adjustDiagramHeight);
+                            }, 80);
+                        }
+                    }
+                });
+            }
+        });
+        
+        observer.observe(document.body, { childList: true, subtree: true });
+    </script>
 </body>
 </html>
