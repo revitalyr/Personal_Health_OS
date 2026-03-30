@@ -715,9 +715,29 @@
 
     <script>
         // Initialize Mermaid Height Adjuster
-        document.addEventListener('DOMContentLoaded', () => {
-            // The utility will auto-initialize
-            console.log('Mermaid Height Adjuster loaded and initialized');
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Wait a bit for utility to initialize
+            setTimeout(() => {
+                // Force initialize all tabs to ensure they work
+                const allTabs = ['overview', 'microservices', 'dataflow', 'database', 'security', 'deployment', 'performance', 'integration'];
+                
+                allTabs.forEach(tabId => {
+                    const tab = document.getElementById(tabId);
+                    if (tab && window.mermaidHeightAdjuster) {
+                        console.log(`Force initializing tab: ${tabId}`);
+                        // Mark as not rendered to force re-initialization
+                        tab.removeAttribute('data-rendered');
+                        window.mermaidHeightAdjuster.showTab(tabId);
+                    }
+                });
+                
+                // Finally, show overview tab
+                setTimeout(() => {
+                    if (window.mermaidHeightAdjuster) {
+                        window.mermaidHeightAdjuster.showTab('overview');
+                    }
+                }, 200);
+            }, 500);
         });
     </script>
 </body>
