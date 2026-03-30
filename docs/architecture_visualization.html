@@ -512,12 +512,32 @@
         J[Images & DICOM]
         K[Backups]
     end
+    A --> F
+    B --> G
     C --> F
     D --> H
     E --> G
     A --> I
     C --> J
     A --> K</div>
+                        <script>
+                            // Force render this specific diagram
+                            setTimeout(() => {
+                                const diagram = this.previousElementSibling;
+                                if (diagram && diagram.classList && diagram.classList.contains('mermaid')) {
+                                    mermaid.run({
+                                        nodes: [diagram],
+                                        suppressErrors: true
+                                    }).then(() => {
+                                        console.log('Database graph diagram rendered');
+                                    }).catch(err => {
+                                        console.error('Error rendering Database graph:', err);
+                                    });
+                                }
+                            }, 100);
+                        </script>
+                    </div>
+                    <div class="mermaid-wrapper">
                         <div class="mermaid">erDiagram
     medical_events {
         uuid id PK
@@ -582,6 +602,22 @@
     user_profiles ||--|| hospital_patients : "extends"
     hospital_patients ||--o{ appointments : "has"
     hospital_patients ||--o{ medical_events : "has"</div>
+                        <script>
+                            // Force render this specific diagram
+                            setTimeout(() => {
+                                const diagram = this.previousElementSibling;
+                                if (diagram && diagram.classList && diagram.classList.contains('mermaid')) {
+                                    mermaid.run({
+                                        nodes: [diagram],
+                                        suppressErrors: true
+                                    }).then(() => {
+                                        console.log('Database ER diagram rendered');
+                                    }).catch(err => {
+                                        console.error('Error rendering Database ER:', err);
+                                    });
+                                }
+                            }, 200);
+                        </script>
                     </div>
                 </div>
                 <div class="service-grid">
