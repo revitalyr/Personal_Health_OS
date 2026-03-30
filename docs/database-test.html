@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .diagram-container { 
+            border: 2px solid #ccc; 
+            padding: 20px; 
+            margin: 20px 0; 
+            background: #f9f9f9; 
+        }
+        .mermaid { 
+            border: 1px solid #007bff; 
+            padding: 10px; 
+            background: white; 
+        }
+    </style>
+</head>
+<body>
+    <h1>Database Diagram Test</h1>
+    
+    <div class="diagram-container">
+        <h2>Graph Diagram</h2>
+        <div class="mermaid">graph TB
+    subgraph "PostgreSQL"
+        A[medical_events]
+        B[user_profiles]
+        C[hospital_patients]
+    end
+    subgraph "Redis"
+        D[Timeline Cache]
+        E[Session Cache]
+    end
+    A --> D
+    B --> E
+    C --> D</div>
+    </div>
+
+    <div class="diagram-container">
+        <h2>ER Diagram</h2>
+        <div class="mermaid">erDiagram
+    medical_events {
+        uuid id PK
+        varchar event_type
+        timestamp created_at
+    }
+    user_profiles {
+        uuid id PK
+        varchar email UK
+        timestamp created_at
+    }
+    medical_events ||--o{ user_profiles : "generates"</div>
+    </div>
+
+    <script>
+        // Initialize Mermaid and render diagrams
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Initializing Mermaid...');
+            
+            try {
+                await mermaid.initialize({
+                    startOnLoad: false,
+                    securityLevel: 'loose',
+                    theme: 'default'
+                });
+                
+                // Render all diagrams
+                const diagrams = document.querySelectorAll('.mermaid');
+                console.log(`Found ${diagrams.length} diagrams to render`);
+                
+                for (const diagram of diagrams) {
+                    try {
+                        await mermaid.run({
+                            nodes: [diagram],
+                            suppressErrors: true
+                        });
+                        console.log('Diagram rendered successfully');
+                    } catch (err) {
+                        console.error('Error rendering diagram:', err);
+                    }
+                }
+                
+            } catch (err) {
+                console.error('Mermaid initialization error:', err);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -754,50 +754,56 @@
     </div>
 
     <script>
-        // Initialize Mermaid Height Adjuster
+        // Simple initialization for all diagrams
         document.addEventListener('DOMContentLoaded', async () => {
-            // Wait for mermaid to be ready
-            setTimeout(async () => {
-                // Direct initialization for Database tab
-                const dbTab = document.getElementById('database');
-                if (dbTab) {
-                    const mermaidElements = dbTab.querySelectorAll('.mermaid');
-                    if (mermaidElements.length > 0) {
+            console.log('Simple Mermaid initialization starting...');
+            
+            try {
+                // Initialize Mermaid
+                await mermaid.initialize({
+                    startOnLoad: false,
+                    securityLevel: 'loose',
+                    theme: 'default',
+                    themeVariables: {
+                        primaryColor: '#667eea',
+                        primaryTextColor: '#333',
+                        primaryBorderColor: '#667eea',
+                        lineColor: '#667eea',
+                        secondaryColor: '#764ba2',
+                        tertiaryColor: '#f8f9fa',
+                        fontSize: '14px'
+                    },
+                    flowchart: {
+                        useMaxWidth: false,
+                        htmlLabels: true,
+                        curve: 'basis'
+                    }
+                });
+                
+                // Wait for initialization to complete
+                setTimeout(async () => {
+                    // Render ALL diagrams in ALL tabs
+                    const allDiagrams = document.querySelectorAll('.mermaid');
+                    console.log(`Found ${allDiagrams.length} total diagrams`);
+                    
+                    for (const diagram of allDiagrams) {
                         try {
                             await mermaid.run({
-                                nodes: mermaidElements,
+                                nodes: [diagram],
                                 suppressErrors: true
                             });
-                            console.log('Database tab diagrams rendered directly');
+                            console.log('Diagram rendered:', diagram);
                         } catch (err) {
-                            console.error('Error rendering Database diagrams:', err);
+                            console.error('Error rendering diagram:', err, diagram);
                         }
                     }
-                }
+                    
+                    console.log('All diagrams rendered successfully');
+                }, 200);
                 
-                // Then initialize utility
-                if (window.mermaidHeightAdjuster) {
-                    setTimeout(() => {
-                        // Force initialize all tabs to ensure they work
-                        const allTabs = ['overview', 'microservices', 'dataflow', 'database', 'security', 'deployment', 'performance', 'integration'];
-                        
-                        allTabs.forEach(tabId => {
-                            const tab = document.getElementById(tabId);
-                            if (tab) {
-                                console.log(`Force initializing tab: ${tabId}`);
-                                // Mark as not rendered to force re-initialization
-                                tab.removeAttribute('data-rendered');
-                                window.mermaidHeightAdjuster.showTab(tabId);
-                            }
-                        });
-                        
-                        // Finally, show overview tab
-                        setTimeout(() => {
-                            window.mermaidHeightAdjuster.showTab('overview');
-                        }, 200);
-                    }, 100);
-                }
-            }, 300);
+            } catch (err) {
+                console.error('Mermaid initialization error:', err);
+            }
         });
     </script>
 </body>
