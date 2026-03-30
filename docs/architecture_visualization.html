@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal Health OS - Architecture Visualization</title>
     
-    <!-- Внешние ресурсы -->
+    <!-- External resources -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     
-    <!-- Стили -->
+    <!-- Styles -->
     <style>
         * {
             margin: 0;
@@ -288,28 +288,28 @@
         }
     </style>
     
-    <!-- Определяем функцию сразу -->
+    <!-- Define global function immediately -->
     <script>
-        // Глобальная функция для onclick
+        // Global function for onclick
         function showTab(event, tabName) {
-            // Скрываем все вкладки
+            // Hide all tabs
             const tabs = document.getElementsByClassName('tab-pane');
             for (let i = 0; i < tabs.length; i++) {
                 tabs[i].classList.remove('active');
             }
             
-            // Убираем активный класс у кнопок
+            // Remove active class from buttons
             const buttons = document.getElementsByClassName('nav-tab');
             for (let i = 0; i < buttons.length; i++) {
                 buttons[i].classList.remove('active');
             }
             
-            // Показываем выбранную вкладку
+            // Show selected tab
             const targetTab = document.getElementById(tabName);
             if (targetTab) {
                 targetTab.classList.add('active');
                 
-                // Инициализируем Mermaid для новой видимой вкладки
+                // Initialize Mermaid for new visible tab
                 const mermaidNodes = targetTab.querySelectorAll('.mermaid');
                 if (mermaidNodes.length > 0) {
                     mermaid.run({
@@ -320,39 +320,39 @@
                             curve: 'basis'
                         }
                     }).then(() => {
-                        // Ждем немного чтобы SVG успел отрендериться, затем измеряем размеры
+                        // Wait a bit for SVG to render, then measure sizes
                         setTimeout(() => {
                             updateMermaidScale();
                         }, 200);
                     }).catch(err => console.error("Mermaid run error:", err));
                 }
                 
-                // Обновляем отображение масштаба
+                // Update scale display
                 updateScaleDisplay();
             }
             
-            // Активируем кнопку
+            // Activate button
             if (event && event.currentTarget) {
                 event.currentTarget.classList.add('active');
             }
         }
 
-        // Управление размером шрифта диаграмм
+        // Diagram font size control
         let currentScale = 1.0;
         let isInitialLoad = true;
         let currentTabIndex = 0;
         const tabIds = ['overview', 'microservices', 'dataflow', 'database', 'security', 'deployment', 'performance', 'integration'];
 
-        // Обработка Ctrl+Tab для переключения вкладок
+        // Handle Ctrl+Tab for tab switching
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'Tab') {
                 e.preventDefault();
                 
-                // Определяем направление переключения
+                // Determine switching direction
                 const direction = e.shiftKey ? -1 : 1;
                 currentTabIndex = (currentTabIndex + direction + tabIds.length) % tabIds.length;
                 
-                // Находим кнопку для активации
+                // Find button to activate
                 const targetTabId = tabIds[currentTabIndex];
                 const targetButton = document.querySelector(`.nav-tab[onclick*="${targetTabId}"]`);
                 
@@ -363,7 +363,7 @@
         });
 
         function changeScale(delta) {
-            // Предотвращаем авто-масштабирование после ручного изменения
+            // Prevent auto-scaling after manual change
             isInitialLoad = false;
             currentScale = Math.max(0.5, Math.min(2.0, currentScale + delta));
             updateScaleDisplay();
@@ -374,34 +374,35 @@
             const activeTab = document.querySelector('.tab-pane.active');
             if (!activeTab) return;
 
-            // Автоматически подбираем масштаб только при начальной загрузке
+            // Auto-select scale only on initial load
             if (isInitialLoad && currentScale === 1.0) {
-                // Для начальной загрузки подбираем оптимальный масштаб
+                // For initial load, select optimal scale
                 const mermaidSvgs = activeTab.querySelectorAll('.mermaid svg');
                 if (mermaidSvgs.length > 0) {
                     const svg = mermaidSvgs[0];
                     const bbox = svg.getBBox ? svg.getBBox() : { width: 800, height: 600 };
-                    const containerWidth = activeTab.offsetWidth - 40; // Вычитаем отступы
+                    const containerWidth = activeTab.offsetWidth - 40; // Subtract margins
                     
-                    // Рассчитываем масштаб чтобы диаграмма помещалась по ширине
+                    // Calculate scale so diagram fits by width
                     const optimalScale = Math.min(1.5, containerWidth / (bbox.width + 100));
                     currentScale = Math.max(0.8, Math.min(optimalScale, 1.2));
                     
                     console.log(`Auto-calculated scale: ${currentScale} for width ${containerWidth}, bbox width ${bbox.width}`);
-                    updateScaleDisplay(); // Обновляем отображение после авто-расчета
+                    updateScaleDisplay(); // Update display after auto-calculation
                 }
             }
 
-            // Получаем реальную высоту SVG для точного размера контейнера
+            // Get actual SVG height for precise container size
             const mermaidSvgs = activeTab.querySelectorAll('.mermaid svg');
-            let svgHeight = 400; // высота по умолчанию
+            let svgHeight = 400; // default height
             if (mermaidSvgs.length > 0) {
                 const svg = mermaidSvgs[0];
                 const bbox = svg.getBBox ? svg.getBBox() : { height: 400 };
-                svgHeight = Math.max(200, Math.min(800, bbox.height + 50)); // ограничиваем высоту
+                // Use exact SVG height with small padding
+                svgHeight = Math.max(100, Math.min(1200, bbox.height + 20));
             }
 
-            // Применяем CSS стили с точной высотой диаграммы
+            // Apply CSS styles with precise diagram height
             const isScaled = currentScale > 1.0;
             
             const style = document.createElement('style');
@@ -460,20 +461,20 @@
                 }
             `;
             
-            // Удаляем старый стиль если есть
+            // Remove old style if exists
             const oldStyle = document.getElementById('mermaid-scale-override');
             if (oldStyle) {
                 oldStyle.remove();
             }
             
-            // Добавляем новый стиль
+            // Add new style
             document.head.appendChild(style);
             
             console.log(`Applied scale: ${currentScale}, svg height: ${svgHeight}px, initial: ${isInitialLoad}, centered: ${isScaled}`);
         }
 
         function resetScale() {
-            isInitialLoad = false; // Сбрасываем флаг начальной загрузки
+            isInitialLoad = false; // Reset initial load flag
             currentScale = 1.0;
             updateMermaidScale();
             updateScaleDisplay();
@@ -486,15 +487,9 @@
             }
         }
 
-        function resetScale() {
-            currentScale = 1.0;
-            updateMermaidScale();
-            updateScaleDisplay();
-        }
-
-        // Инициализация при загрузке страницы
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Инициализация Mermaid
+            // Initialize Mermaid
             mermaid.initialize({ 
                 startOnLoad: false, 
                 securityLevel: 'loose', 
@@ -515,17 +510,17 @@
                 }
             });
             
-            // Показываем первую вкладку
+            // Show first tab
             showTab({ currentTarget: document.querySelector('.nav-tab.active') }, 'overview');
             
-            // Инициализация отображения масштаба
+            // Initialize scale display
             updateScaleDisplay();
         });
     </script>
 </head>
 <body>
     <div class="container">
-        <!-- Заголовок -->
+        <!-- Header -->
         <header class="header">
             <h1>🏥 Personal Health OS</h1>
             <p>Personal Health Management System - Architecture and Data Flows</p>
@@ -541,9 +536,9 @@
             <button class="nav-tab" onclick="showTab(event, 'integration')">Integrations</button>
         </nav>
 
-        <!-- Контент вкладок -->
+        <!-- Tab content -->
         <main class="content">
-            <!-- Обзор системы -->
+            <!-- System overview -->
             <section id="overview" class="tab-pane active">
                 <h2>System Architecture</h2>
                 <div class="scale-controls">
