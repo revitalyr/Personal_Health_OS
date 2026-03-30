@@ -320,10 +320,10 @@
                             curve: 'basis'
                         }
                     }).then(() => {
-                        // Wait a bit for SVG to render, then measure sizes
+                        // Wait for Mermaid to render, then force SVG height
                         setTimeout(() => {
                             updateMermaidScale();
-                        }, 200);
+                        }, 300); // Increased delay for full rendering
                     }).catch(err => console.error("Mermaid run error:", err));
                 }
                 
@@ -367,7 +367,11 @@
             isInitialLoad = false;
             currentScale = Math.max(0.5, Math.min(2.0, currentScale + delta));
             updateScaleDisplay();
-            updateMermaidScale();
+            
+            // Force immediate SVG height update after scale change
+            setTimeout(() => {
+                updateMermaidScale();
+            }, 50);
         }
 
         function updateMermaidScale() {
