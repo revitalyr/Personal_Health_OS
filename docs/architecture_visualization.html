@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,87 +28,93 @@
             max-width: 1400px;
             margin: 0 auto;
             padding: 5px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
         }
 
         .header {
             text-align: center;
-            color: white;
-            margin-bottom: 2px;
-            animation: fadeInDown 0.8s ease;
+            margin-bottom: 5px;
+            padding: 15px 0;
         }
 
         .header h1 {
-            font-size: 1rem;
-            margin-bottom: 1px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
         }
 
         .header p {
-            font-size: 0.7rem;
-            opacity: 0.8;
-            margin-bottom: 1px;
+            font-size: 1rem;
+            color: #666;
+            font-weight: 500;
         }
 
         .nav-tabs {
             display: flex;
-            justify-content: center;
-            margin-bottom: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 5px;
+            margin-bottom: 5px;
+            gap: 2px;
             flex-wrap: wrap;
-            gap: 3px;
-            animation: fadeInUp 0.8s ease;
         }
 
         .nav-tab {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 2px 5px;
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #333;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
             cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
             transition: all 0.3s ease;
-            font-size: 0.6rem;
-            font-weight: 500;
-            backdrop-filter: blur(10px);
+            margin-right: 1px;
         }
 
         .nav-tab:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.3);
             transform: translateY(-2px);
         }
 
         .nav-tab.active {
-            background: white;
-            color: #667eea;
-            border-color: white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
         .content {
-            background: white;
-            border-radius: 5px;
-            padding: 3px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            animation: fadeIn 1s ease;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.98);
         }
 
         .tab-pane {
             display: none;
+            animation: fadeIn 0.5s ease-in-out;
         }
 
         .tab-pane.active {
             display: block;
-            animation: slideIn 0.5s ease;
         }
 
         .tab-pane h2 {
-            color: #667eea;
-            margin-bottom: 2px;
-            font-size: 0.8rem;
-            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+            font-weight: 600;
         }
 
-        /* Diagram container - динамическая высота */
+        /* Diagram container - dynamic height */
         .diagram-container {
             position: relative;
             margin: 10px 0;
@@ -182,7 +188,7 @@
             border-radius: 20px;
         }
 
-        /* Убираем старые фиксированные высоты */
+        /* Remove old fixed heights */
         .tab-pane.active .mermaid {
             transform: none;
             transform-origin: center;
@@ -192,31 +198,34 @@
         .service-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            gap: 15px;
             margin-top: 15px;
         }
 
         .service-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: rgba(255, 255, 255, 0.15);
             padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
         }
 
         .service-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
 
         .service-card h3 {
+            color: #333;
             margin-bottom: 10px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
         }
 
         .service-card p {
-            font-size: 0.9rem;
-            opacity: 0.9;
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.6;
         }
 
         .tech-stack {
@@ -237,27 +246,13 @@
         }
 
         .tech-stack li {
-            padding: 2px 0;
-        }
-
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
         }
 
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
         }
 
         @media (max-width: 768px) {
@@ -273,6 +268,7 @@
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <header class="header">
             <h1>🏥 Personal Health OS</h1>
             <p>Personal Health Management System - Architecture and Data Flows</p>
@@ -288,9 +284,11 @@
             <button class="nav-tab" data-tab="integration">Integrations</button>
         </nav>
 
+        <!-- Tab content -->
         <main class="content">
             <!-- System overview -->
             <section id="overview" class="tab-pane active">
+                <h2>System Architecture</h2>
                 <div class="diagram-container">
                     <div class="scale-controls">
                         <button class="scale-btn" data-scale-delta="-0.1">−</button>
@@ -367,7 +365,15 @@
                     <div class="service-card">
                         <h3>🚪 API Gateway</h3>
                         <p>Request routing, authentication, validation</p>
-                        <div class="tech-stack"><h4>Technologies:</h4><ul><li>• Rust + Axum</li><li>• JWT Authentication</li><li>• OpenTelemetry</li><li>• Tower Middleware</li></ul></div>
+                        <div class="tech-stack">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>• Rust + Axum</li>
+                                <li>• JWT Authentication</li>
+                                <li>• OpenTelemetry</li>
+                                <li>• Tower Middleware</li>
+                            </ul>
+                        </div>
                     </div>
                     <div class="service-card"><h3>📅 Timeline Service</h3><p>Event aggregation, timeline construction</p><div class="tech-stack"><h4>Technologies:</h4><ul><li>• Rust + Tokio</li><li>• PostgreSQL</li><li>• Redis Cache</li><li>• Event Sourcing</li></ul></div></div>
                     <div class="service-card"><h3>📄 Document Processor</h3><p>OCR, medical entity extraction, storage</p><div class="tech-stack"><h4>Technologies:</h4><ul><li>• Tesseract OCR</li><li>• AWS S3/Cloudflare R2</li><li>• Medical NLP</li><li>• Parallel Processing</li></ul></div></div>
@@ -384,26 +390,36 @@
 
             <!-- Microservices tab -->
             <section id="microservices" class="tab-pane">
+                <h2>Microservices Architecture</h2>
                 <div class="diagram-container">
-                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
-                    <div class="mermaid-wrapper"><div class="mermaid">graph LR
-    subgraph "Основные сервисы"
-        A[API Gateway<br/>8080]
-        B[Timeline Service<br/>8081]
-        C[Document Processor<br/>8082]
-        D[AI Report Service<br/>8083]
-        E[Doctor Access<br/>8084]
+                    <div class="scale-controls">
+                        <button class="scale-btn" data-scale-delta="-0.1">−</button>
+                        <span class="scale-display">100%</span>
+                        <button class="scale-btn" data-scale-delta="0.1">+</button>
+                        <button class="scale-btn" data-reset-scale>⟲</button>
+                    </div>
+                    <div class="mermaid-wrapper">
+                        <div class="mermaid">graph LR
+    subgraph "Core Services"
+        A[API Gateway]
+        B[Timeline Service]
+        C[Document Processor]
+        D[AI Report Service]
+        E[Doctor Access]
     end
-    subgraph "Управление больницей"
-        F[Patient Management<br/>8085]
-        G[Appointment Scheduling<br/>8086]
-        H[Billing & Invoicing<br/>8087]
+    
+    subgraph "Hospital Management"
+        F[Patient Management]
+        G[Appointment Scheduling]
+        H[Billing & Invoicing]
     end
-    subgraph "Поддерживающие сервисы"
-        I[Licence Management<br/>8088]
-        J[Notification Service<br/>8089]
-        K[Reporting Service<br/>8090]
+    
+    subgraph "Support Services"
+        I[Licence Management]
+        J[Notification Service]
+        K[Reporting Service]
     end
+    
     A --> B
     A --> C
     A --> D
@@ -414,79 +430,82 @@
     A --> I
     A --> J
     A --> K
+    
     B -.-> F
     C -.-> F
     D -.-> F
-    E -.-> F</div></div>
+    E -.-> F</div>
+                    </div>
                 </div>
-                <div class="service-grid"><div class="service-card"><h3>🚪 API Gateway (8080)</h3><p>Маршрутизация запросов, аутентификация</p><div class="tech-stack"><h4>Технологии:</h4><ul><li>• Rust + Axum</li><li>• JWT Authentication</li><li>• OpenTelemetry</li></ul></div></div></div>
             </section>
 
             <!-- Data Flows tab -->
             <section id="dataflow" class="tab-pane">
+                <h2>Data Flows</h2>
                 <div class="diagram-container">
-                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
-                    <div class="mermaid-wrapper"><div class="mermaid">sequenceDiagram
-    participant C as Клиент
-    participant G as API Gateway
-    participant B as NATS Bus
-    participant T as Timeline Service
-    participant D as Database
-    participant A as AI Service
+                    <div class="scale-controls">
+                        <button class="scale-btn" data-scale-delta="-0.1">−</button>
+                        <span class="scale-display">100%</span>
+                        <button class="scale-btn" data-scale-delta="0.1">+</button>
+                        <button class="scale-btn" data-reset-scale>⟲</button>
+                    </div>
+                    <div class="mermaid-wrapper">
+                        <div class="mermaid">sequenceDiagram
+    participant Client as Client
+    participant Gateway as API Gateway
+    participant Bus as NATS Bus
+    participant Timeline as Timeline Service
+    participant DB as Database
+    participant AI as AI Service
     
-    Note over C,A: Создание медицинского события
-    C->>G: POST /api/events
-    G->>G: Аутентификация JWT
-    G->>B: Публикация события
-    B->>T: Обработка события
-    T->>D: Сохранение в medical_events
-    T->>D: Обновление кэша
-    T-->>G: Подтверждение
-    G-->>C: Ответ с ID события
+    Note over Client,AI: Create medical event
+    Client->>Gateway: POST /api/events
+    Gateway->>Gateway: JWT Authentication
+    Gateway->>Bus: Publish event
+    Bus->>Timeline: Process event
+    Timeline->>DB: Store in medical_events
+    Timeline->>DB: Update cache
+    Timeline-->>Gateway: Confirmation
+    Gateway-->>Client: Response with event ID
     
-    Note over C,A: Запрос временной шкалы
-    C->>G: GET /api/timeline/{patient_id}
-    G->>T: Запрос таймлайна
-    T->>D: Проверка кэша Redis
-    alt Кэш найден
-        D-->>T: Данные из кэша
-    else Кэш не найден
-        D->>D: Запрос из PostgreSQL
-        D->>D: Сортировка событий O(n log n)
-        D->>D: Сохранение в кэш
-        D-->>T: Данные из БД
+    Note over Client,AI: Request timeline
+    Client->>Gateway: GET /api/timeline/{patient_id}
+    Gateway->>Timeline: Request timeline
+    Timeline->>DB: Check Redis cache
+    alt Cache found
+        DB-->>Timeline: Data from cache
+    else Cache not found
+        DB->>DB: Query from PostgreSQL
+        DB->>DB: Sort events O(n log n)
+        DB->>DB: Store in cache
+        DB-->>Timeline: Data from DB
     end
-    T-->>G: Timeline данные
-    G-->>C: JSON ответ
+    Timeline-->>Gateway: Timeline data
+    Gateway-->>Client: JSON response
     
-    Note over C,A: Генерация AI отчета
-    C->>G: POST /api/reports/generate
-    G->>A: Запрос отчета
-    A->>D: Сбор данных пациента
-    A->>A: Построение контекста
-    A->>A: LLM генерация
-    A->>D: Сохранение отчета
-    A-->>G: Сгенерированный отчет
-    G-->>C: PDF/HTML отчет</div></div>
+    Note over Client,AI: Generate AI report
+    Client->>Gateway: POST /api/reports/generate
+    Gateway->>AI: Request report
+    AI->>DB: Collect patient data
+    AI->>AI: Build context
+    AI->>AI: LLM generation
+    AI->>DB: Store report
+    AI-->>Gateway: Generated report
+    Gateway-->>Client: PDF/HTML report</div>
+                    </div>
                 </div>
-                <div class="mermaid-wrapper"><div class="mermaid">graph TB
-    subgraph "Event Sourcing Pattern"
-        A[Client Request] --> B[API Gateway]
-        B --> C[Event Validation]
-        C --> D[NATS Event Bus]
-        D --> E[Event Handlers]
-        E --> F[PostgreSQL medical_events]
-        F --> G[Read Models]
-        G --> H[Cache Layer Redis]
-    end
-    H --> O[Client Response]</div></div>
             </section>
 
             <!-- Database tab -->
             <section id="database" class="tab-pane">
                 <h2>Database Architecture</h2>
                 <div class="diagram-container">
-                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
+                    <div class="scale-controls">
+                        <button class="scale-btn" data-scale-delta="-0.1">−</button>
+                        <span class="scale-display">100%</span>
+                        <button class="scale-btn" data-scale-delta="0.1">+</button>
+                        <button class="scale-btn" data-reset-scale>⟲</button>
+                    </div>
                     <div class="mermaid-wrapper">
                         <div class="mermaid">graph TB
     subgraph "PostgreSQL - Main DB"
@@ -495,12 +514,6 @@
         C[hospital_patients]
         D[appointments]
         E[licences]
-        F[Timeline Cache]
-        G[Session Cache]
-        H[Rate Limiting]
-        I[Medical Documents]
-        J[Images & DICOM]
-        K[Backups]
     end
     subgraph "Redis Cache"
         F[Timeline Cache]
@@ -520,22 +533,14 @@
     A --> I
     C --> J
     A --> K</div>
-                        <script>
-                            // Force render this specific diagram
-                            setTimeout(() => {
-                                const diagram = this.previousElementSibling;
-                                if (diagram && diagram.classList && diagram.classList.contains('mermaid')) {
-                                    mermaid.run({
-                                        nodes: [diagram],
-                                        suppressErrors: true
-                                    }).then(() => {
-                                        console.log('Database graph diagram rendered');
-                                    }).catch(err => {
-                                        console.error('Error rendering Database graph:', err);
-                                    });
-                                }
-                            }, 100);
-                        </script>
+                    </div>
+                </div>
+                <div class="diagram-container">
+                    <div class="scale-controls">
+                        <button class="scale-btn" data-scale-delta="-0.1">−</button>
+                        <span class="scale-display">100%</span>
+                        <button class="scale-btn" data-scale-delta="0.1">+</button>
+                        <button class="scale-btn" data-reset-scale>⟲</button>
                     </div>
                     <div class="mermaid-wrapper">
                         <div class="mermaid">erDiagram
@@ -602,22 +607,6 @@
     user_profiles ||--|| hospital_patients : "extends"
     hospital_patients ||--o{ appointments : "has"
     hospital_patients ||--o{ medical_events : "has"</div>
-                        <script>
-                            // Force render this specific diagram
-                            setTimeout(() => {
-                                const diagram = this.previousElementSibling;
-                                if (diagram && diagram.classList && diagram.classList.contains('mermaid')) {
-                                    mermaid.run({
-                                        nodes: [diagram],
-                                        suppressErrors: true
-                                    }).then(() => {
-                                        console.log('Database ER diagram rendered');
-                                    }).catch(err => {
-                                        console.error('Error rendering Database ER:', err);
-                                    });
-                                }
-                            }, 200);
-                        </script>
                     </div>
                 </div>
                 <div class="service-grid">
@@ -667,87 +656,368 @@
 
             <!-- Security tab -->
             <section id="security" class="tab-pane">
+                <h2>Security Architecture</h2>
                 <div class="diagram-container">
-                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
-                    <div class="mermaid-wrapper"><div class="mermaid">graph TB
+                    <div class="scale-controls">
+                        <button class="scale-btn" data-scale-delta="-0.1">−</button>
+                        <span class="scale-display">100%</span>
+                        <button class="scale-btn" data-scale-delta="0.1">+</button>
+                        <button class="scale-btn" data-reset-scale>⟲</button>
+                    </div>
+                    <div class="mermaid-wrapper">
+                        <div class="mermaid">graph TB
     subgraph "Authentication Layer"
         A[Client] --> B[JWT Token]
         B --> C[API Gateway Auth]
         C --> D[Token Validation]
         D --> E[Role Check]
     end
+    
     subgraph "Authorization"
         F[RBAC]
         G[Patient Role]
         H[Doctor Role]
         I[Admin Role]
     end
-    E --> F
-    F --> G & H & I</div></div>
+    
+    subgraph "Data Protection"
+        J[Encryption at Rest - PostgreSQL TDE]
+        K[Encryption in Transit - TLS 1.3]
+        L[Data Masking - Logs & Monitoring]
+    end
+    
+    subgraph "Compliance"
+        M[HIPAA Compliance]
+        N[GDPR Compliance]
+        O[Audit Logging]
+        P[Data Retention Policies]
+    end
+    
+    G --> J
+    H --> J
+    I --> J
+    J --> K
+    K --> L
+    L --> M
+    M --> N
+    N --> O
+    O --> P</div>
+                    </div>
+                </div>
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>🔐 Authentication</h3>
+                        <p>JWT tokens with refresh and revocation</p>
+                        <div class="tech-stack">
+                            <h4>Mechanisms:</h4>
+                            <ul>
+                                <li>• JWT Access Tokens (24h)</li>
+                                <li>• Refresh Tokens (7d)</li>
+                                <li>• Multi-factor Authentication</li>
+                                <li>• OAuth2 / OpenID Connect</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>🛡️ Authorization</h3>
+                        <p>Role-based access control to data</p>
+                        <div class="tech-stack">
+                            <h4>Roles:</h4>
+                            <ul>
+                                <li>• Patient - access to own data</li>
+                                <li>• Doctor - access to patients</li>
+                                <li>• Admin - full management</li>
+                                <li>• Scope-based access</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>🔒 Encryption</h3>
+                        <p>Data protection at all levels</p>
+                        <div class="tech-stack">
+                            <h4>Levels:</h4>
+                            <ul>
+                                <li>• TDE for PostgreSQL</li>
+                                <li>• TLS 1.3 for traffic</li>
+                                <li>• AES-256 for files</li>
+                                <li>• Masking in logs</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <!-- Deployment tab -->
             <section id="deployment" class="tab-pane">
+                <h2>Deployment Architecture</h2>
                 <div class="diagram-container">
-                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
-                    <div class="mermaid-wrapper"><div class="mermaid">graph TB
+                    <div class="scale-controls">
+                        <button class="scale-btn" data-scale-delta="-0.1">−</button>
+                        <span class="scale-display">100%</span>
+                        <button class="scale-btn" data-scale-delta="0.1">+</button>
+                        <button class="scale-btn" data-reset-scale>⟲</button>
+                    </div>
+                    <div class="mermaid-wrapper">
+                        <div class="mermaid">graph TB
     subgraph "CI/CD"
         A[Git Push] --> B[GitHub Actions]
         B --> C[Build & Test]
-        C --> D[Docker Build]
-        D --> E[Push Registry]
-        E --> F[Deploy K8s]
+        C --> D[Security Scan]
+        D --> E[Docker Build]
+        E --> F[Push Registry]
+        F --> G[Deploy K8s]
     end
+    
     subgraph "Kubernetes"
         H[Ingress]
         I[API Gateway Pod]
         J[Service Pods]
+        K[Database StatefulSet]
+        L[Redis Deployment]
     end
-    F --> H
+    
+    subgraph "Infrastructure"
+        M[Load Balancer]
+        N[Auto Scaling]
+        O[Monitoring Stack]
+        P[Logging Stack]
+    end
+    
+    G --> H
     H --> I
-    I --> J</div></div>
+    I --> J
+    J --> K
+    J --> L
+    I --> M
+    J --> N
+    K --> O
+    L --> P</div>
+                    </div>
+                </div>
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>🐳 Containerization</h3>
+                        <p>Docker containers with multi-stage builds</p>
+                        <div class="tech-stack">
+                            <h4>Optimization:</h4>
+                            <ul>
+                                <li>• Alpine Linux base images</li>
+                                <li>• Multi-stage builds</li>
+                                <li>• Health checks</li>
+                                <li>• Resource limits</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>☸️ Kubernetes</h3>
+                        <p>Container orchestration and services</p>
+                        <div class="tech-stack">
+                            <h4>Components:</h4>
+                            <ul>
+                                <li>• Deployments & Services</li>
+                                <li>• ConfigMaps & Secrets</li>
+                                <li>• Ingress Controllers</li>
+                                <li>• HPA for scaling</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📊 Monitoring</h3>
+                        <p>Full system observability</p>
+                        <div class="tech-stack">
+                            <h4>Stack:</h4>
+                            <ul>
+                                <li>• Prometheus + Grafana</li>
+                                <li>• Jaeger for tracing</li>
+                                <li>• ELK Stack for logs</li>
+                                <li>• OpenTelemetry</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <!-- Performance tab -->
             <section id="performance" class="tab-pane">
+                <h2>Performance Optimization</h2>
                 <div class="diagram-container">
-                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
-                    <div class="mermaid-wrapper"><div class="mermaid">graph LR
+                    <div class="scale-controls">
+                        <button class="scale-btn" data-scale-delta="-0.1">−</button>
+                        <span class="scale-display">100%</span>
+                        <button class="scale-btn" data-scale-delta="0.1">+</button>
+                        <button class="scale-btn" data-reset-scale>⟲</button>
+                    </div>
+                    <div class="mermaid-wrapper">
+                        <div class="mermaid">graph LR
     subgraph "Frontend"
-        A[React/Vue] --> B[Code Splitting]
-        B --> C[CDN Delivery]
+        A[React/Vue Apps] --> B[Code Splitting]
+        B --> C[Lazy Loading]
+        C --> D[CDN Delivery]
     end
+    
     subgraph "Backend"
-        D[API Gateway] --> E[Connection Pool]
-        E --> F[Caching]
-        F --> G[Async Processing]
+        E[API Gateway] --> F[Connection Pooling]
+        F --> G[Caching Strategy]
+        G --> H[Async Processing]
     end
-    C --> D
-    G --> H[Database Replicas]</div></div>
+    
+    subgraph "Database"
+        I[PostgreSQL] --> J[Index Optimization]
+        J --> K[Query Optimization]
+        K --> L[Read Replicas]
+    end
+    
+    subgraph "Performance Metrics"
+        M[Response Time <200ms]
+        N[Page Load <2s]
+        O[Database Query <100ms]
+        P[Memory Usage <70%]
+    end
+    
+    D --> E
+    H --> I
+    L --> M
+    M --> N
+    N --> O
+    O --> P</div>
+                    </div>
+                </div>
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>⚡ Caching</h3>
+                        <p>Multi-level caching strategy</p>
+                        <div class="tech-stack">
+                            <h4>Levels:</h4>
+                            <ul>
+                                <li>• CDN for static resources</li>
+                                <li>• Redis for data</li>
+                                <li>• Application cache</li>
+                                <li>• Database query cache</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>🔄 Asynchrony</h3>
+                        <p>Asynchronous request processing</p>
+                        <div class="tech-stack">
+                            <h4>Patterns:</h4>
+                            <ul>
+                                <li>• Tokio async runtime</li>
+                                <li>• Event-driven architecture</li>
+                                <li>• Background job processing</li>
+                                <li>• Streaming responses</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📈 Scaling</h3>
+                        <p>Horizontal scaling strategies</p>
+                        <div class="tech-stack">
+                            <h4>Strategies:</h4>
+                            <ul>
+                                <li>• Stateless services</li>
+                                <li>• Load balancing</li>
+                                <li>• Database sharding</li>
+                                <li>• Auto-scaling policies</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <!-- Integration tab -->
             <section id="integration" class="tab-pane">
+                <h2>External Integrations</h2>
                 <div class="diagram-container">
-                    <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
-                    <div class="mermaid-wrapper"><div class="mermaid">graph TB
+                    <div class="scale-controls">
+                        <button class="scale-btn" data-scale-delta="-0.1">−</button>
+                        <span class="scale-display">100%</span>
+                        <button class="scale-btn" data-scale-delta="0.1">+</button>
+                        <button class="scale-btn" data-reset-scale>⟲</button>
+                    </div>
+                    <div class="mermaid-wrapper">
+                        <div class="mermaid">graph TB
     subgraph "Health OS Core"
         A[Timeline Service]
         B[Document Processor]
         C[AI Report Service]
     end
+    
     subgraph "External"
         D[SendGrid/SES]
         E[Twilio]
         F[Stripe/PayPal]
         G[OpenAI/Ollama]
     end
-    A --> D & E
+    
+    subgraph "Third-party"
+        H[EHR Systems]
+        I[Laboratory Systems]
+        J[Insurance APIs]
+        K[Pharmacy Systems]
+    end
+    
+    A --> D
+    A --> E
     B --> G
-    C --> F</div></div>
+    C --> F
+    C --> H
+    C --> I
+    C --> J
+    C --> K
+    A --> L
+    B --> M
+    C --> N</div>
+                    </div>
+                </div>
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>📧 Communications</h3>
+                        <p>Email, SMS and push notifications</p>
+                        <div class="tech-stack">
+                            <h4>Services:</h4>
+                            <ul>
+                                <li>• SendGrid / AWS SES</li>
+                                <li>• Twilio for SMS</li>
+                                <li>• Firebase Push</li>
+                                <li>• WebSocket for real-time</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>💳 Payments</h3>
+                        <p>Payment system integrations</p>
+                        <div class="tech-stack">
+                            <h4>Providers:</h4>
+                            <ul>
+                                <li>• Stripe Payments</li>
+                                <li>• PayPal Integration</li>
+                                <li>• Apple/Google Pay</li>
+                                <li>• Insurance billing APIs</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>🏥 Medical Systems</h3>
+                        <p>EHR and laboratory integrations</p>
+                        <div class="tech-stack">
+                            <h4>Standards:</h4>
+                            <ul>
+                                <li>• HL7/FHIR Protocols</li>
+                                <li>• DICOM for images</li>
+                                <li>• Laboratory Information Systems</li>
+                                <li>• Pharmacy Management Systems</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
@@ -799,6 +1069,18 @@
                     }
                     
                     console.log('All diagrams rendered successfully');
+                    
+                    // Initialize utility for height adjustment
+                    if (window.mermaidHeightAdjuster) {
+                        setTimeout(() => {
+                            // Show overview tab by default
+                            const overviewTab = document.querySelector('[data-tab="overview"]');
+                            if (overviewTab) {
+                                overviewTab.click();
+                            }
+                        }, 100);
+                    }
+                    
                 }, 200);
                 
             } catch (err) {
