@@ -484,10 +484,11 @@
 
             <!-- Database tab -->
             <section id="database" class="tab-pane">
+                <h2>Database Architecture</h2>
                 <div class="diagram-container">
                     <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
                     <div class="mermaid-wrapper"><div class="mermaid">graph TB
-    subgraph "PostgreSQL - Основная БД"
+    subgraph "PostgreSQL - Main DB"
         A[medical_events]
         B[user_profiles]
         C[hospital_patients]
@@ -497,22 +498,131 @@
     subgraph "Redis Cache"
         F[Timeline Cache]
         G[Session Cache]
+        H[Rate Limiting]
     end
     subgraph "Object Storage"
         I[Medical Documents]
         J[Images & DICOM]
+        K[Backups]
     end
     A --> F
     B --> G
     C --> F
-    D --> G</div></div>
+    D --> H
+    E --> G
+    A --> I
+    C --> J
+    A --> K</div></div>
                 </div>
-                <div class="mermaid-wrapper"><div class="mermaid">erDiagram
-    medical_events { uuid id PK uuid patient_id FK varchar event_type timestamp timestamp jsonb payload }
-    user_profiles { uuid id PK varchar email UK varchar phone }
-    hospital_patients { uuid id PK uuid profile_id FK varchar patient_id UK }
-    user_profiles ||--o{ medical_events : generates
-    user_profiles ||--|| hospital_patients : extends</div></div>
+                <div class="diagram-container">
+                    <div class="mermaid-wrapper"><div class="mermaid">erDiagram
+    medical_events {
+        uuid id PK
+        uuid patient_id FK
+        varchar event_type
+        timestamp timestamp
+        jsonb payload
+        varchar source
+        integer version
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    user_profiles {
+        uuid id PK
+        varchar email UK
+        varchar phone
+        jsonb profile_data
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    hospital_patients {
+        uuid id PK
+        uuid profile_id FK
+        varchar patient_id UK
+        varchar blood_type
+        varchar emergency_contact_name
+        varchar emergency_contact_phone
+        varchar insurance_provider
+        timestamp admission_date
+        timestamp discharge_date
+        varchar status
+    }
+    
+    appointments {
+        uuid id PK
+        uuid patient_id FK
+        uuid doctor_id
+        uuid facility_id
+        varchar appointment_type
+        timestamp start_time
+        timestamp end_time
+        varchar status
+        text notes
+        boolean reminder_sent
+    }
+    
+    licences {
+        uuid id PK
+        varchar licence_key UK
+        varchar customer_name
+        varchar customer_email
+        varchar product_name
+        varchar tier
+        integer max_users
+        timestamp expiry_date
+        boolean is_active
+    }
+    
+    user_profiles ||--o{ medical_events : "generates"
+    user_profiles ||--|| hospital_patients : "extends"
+    hospital_patients ||--o{ appointments : "has"
+    hospital_patients ||--o{ medical_events : "has"</div></div>
+                </div>
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>🗄️ PostgreSQL</h3>
+                        <p>Main database with JSONB support and timestamp indexing</p>
+                        <div class="tech-stack">
+                            <h4>Features:</h4>
+                            <ul>
+                                <li>• Event Sourcing tables</li>
+                                <li>• Indexes on patient_id, timestamp</li>
+                                <li>• Date partitioning</li>
+                                <li>• Master-slave replication</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>⚡ Redis Cache</h3>
+                        <p>Caching for timelines and sessions</p>
+                        <div class="tech-stack">
+                            <h4>Usage:</h4>
+                            <ul>
+                                <li>• Timeline caching</li>
+                                <li>• JWT sessions</li>
+                                <li>• Rate limiting</li>
+                                <li>• Real-time data</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📦 Object Storage</h3>
+                        <p>Medical documents and images storage</p>
+                        <div class="tech-stack">
+                            <h4>Storage:</h4>
+                            <ul>
+                                <li>• AWS S3 / Cloudflare R2</li>
+                                <li>• PDF documents</li>
+                                <li>• Medical images</li>
+                                <li>• Backup copies</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Security tab -->

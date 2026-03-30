@@ -92,7 +92,7 @@ class MermaidHeightAdjuster {
                 suppressErrors: true,
             });
             
-            // After rendering, adjust heights
+            // After rendering, adjust heights for ALL diagram containers
             setTimeout(() => {
                 const containers = tabElement.querySelectorAll('.diagram-container');
                 containers.forEach(container => this.adjustDiagramHeight(container));
