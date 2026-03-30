@@ -487,13 +487,20 @@
                 <h2>Database Architecture</h2>
                 <div class="diagram-container">
                     <div class="scale-controls"><button class="scale-btn" data-scale-delta="-0.1">−</button><span class="scale-display">100%</span><button class="scale-btn" data-scale-delta="0.1">+</button><button class="scale-btn" data-reset-scale>⟲</button></div>
-                    <div class="mermaid-wrapper"><div class="mermaid">graph TB
+                    <div class="mermaid-wrapper">
+                        <div class="mermaid">graph TB
     subgraph "PostgreSQL - Main DB"
         A[medical_events]
         B[user_profiles]
         C[hospital_patients]
         D[appointments]
         E[licences]
+        F[Timeline Cache]
+        G[Session Cache]
+        H[Rate Limiting]
+        I[Medical Documents]
+        J[Images & DICOM]
+        K[Backups]
     end
     subgraph "Redis Cache"
         F[Timeline Cache]
@@ -505,17 +512,13 @@
         J[Images & DICOM]
         K[Backups]
     end
-    A --> F
-    B --> G
     C --> F
     D --> H
     E --> G
     A --> I
     C --> J
-    A --> K</div></div>
-                </div>
-                <div class="diagram-container">
-                    <div class="mermaid-wrapper"><div class="mermaid">erDiagram
+    A --> K</div>
+                        <div class="mermaid">erDiagram
     medical_events {
         uuid id PK
         uuid patient_id FK
@@ -578,7 +581,8 @@
     user_profiles ||--o{ medical_events : "generates"
     user_profiles ||--|| hospital_patients : "extends"
     hospital_patients ||--o{ appointments : "has"
-    hospital_patients ||--o{ medical_events : "has"</div></div>
+    hospital_patients ||--o{ medical_events : "has"</div>
+                    </div>
                 </div>
                 <div class="service-grid">
                     <div class="service-card">
@@ -716,28 +720,48 @@
     <script>
         // Initialize Mermaid Height Adjuster
         document.addEventListener('DOMContentLoaded', async () => {
-            // Wait a bit for utility to initialize
-            setTimeout(() => {
-                // Force initialize all tabs to ensure they work
-                const allTabs = ['overview', 'microservices', 'dataflow', 'database', 'security', 'deployment', 'performance', 'integration'];
-                
-                allTabs.forEach(tabId => {
-                    const tab = document.getElementById(tabId);
-                    if (tab && window.mermaidHeightAdjuster) {
-                        console.log(`Force initializing tab: ${tabId}`);
-                        // Mark as not rendered to force re-initialization
-                        tab.removeAttribute('data-rendered');
-                        window.mermaidHeightAdjuster.showTab(tabId);
+            // Wait for mermaid to be ready
+            setTimeout(async () => {
+                // Direct initialization for Database tab
+                const dbTab = document.getElementById('database');
+                if (dbTab) {
+                    const mermaidElements = dbTab.querySelectorAll('.mermaid');
+                    if (mermaidElements.length > 0) {
+                        try {
+                            await mermaid.run({
+                                nodes: mermaidElements,
+                                suppressErrors: true
+                            });
+                            console.log('Database tab diagrams rendered directly');
+                        } catch (err) {
+                            console.error('Error rendering Database diagrams:', err);
+                        }
                     }
-                });
+                }
                 
-                // Finally, show overview tab
-                setTimeout(() => {
-                    if (window.mermaidHeightAdjuster) {
-                        window.mermaidHeightAdjuster.showTab('overview');
-                    }
-                }, 200);
-            }, 500);
+                // Then initialize utility
+                if (window.mermaidHeightAdjuster) {
+                    setTimeout(() => {
+                        // Force initialize all tabs to ensure they work
+                        const allTabs = ['overview', 'microservices', 'dataflow', 'database', 'security', 'deployment', 'performance', 'integration'];
+                        
+                        allTabs.forEach(tabId => {
+                            const tab = document.getElementById(tabId);
+                            if (tab) {
+                                console.log(`Force initializing tab: ${tabId}`);
+                                // Mark as not rendered to force re-initialization
+                                tab.removeAttribute('data-rendered');
+                                window.mermaidHeightAdjuster.showTab(tabId);
+                            }
+                        });
+                        
+                        // Finally, show overview tab
+                        setTimeout(() => {
+                            window.mermaidHeightAdjuster.showTab('overview');
+                        }, 200);
+                    }, 100);
+                }
+            }, 300);
         });
     </script>
 </body>
