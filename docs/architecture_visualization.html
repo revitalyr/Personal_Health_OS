@@ -394,31 +394,14 @@
 
             // Get actual SVG height for precise container size
             const mermaidSvgs = activeTab.querySelectorAll('.mermaid svg');
-            let svgHeight = 400; // default height
+            let svgHeight = 600; // increased default height
             if (mermaidSvgs.length > 0) {
                 const svg = mermaidSvgs[0];
-                // Try multiple methods to get accurate height
-                const bbox = svg.getBBox ? svg.getBBox() : { height: 400 };
-                const rect = svg.getBoundingClientRect ? svg.getBoundingClientRect() : { height: 400 };
-                const viewBox = svg.getAttribute('viewBox');
+                // Force set SVG height directly
+                svg.setAttribute('height', svgHeight);
+                svg.style.height = svgHeight + 'px';
                 
-                let viewBoxHeight = 400;
-                if (viewBox) {
-                    const parts = viewBox.split(' ');
-                    viewBoxHeight = parseFloat(parts[3]) || 400;
-                }
-                
-                // Use the largest height value to ensure full visibility
-                svgHeight = Math.max(
-                    bbox.height || 400,
-                    rect.height || 400, 
-                    viewBoxHeight || 400
-                );
-                
-                // Add reasonable padding
-                svgHeight = Math.max(200, Math.min(1200, svgHeight + 40));
-                
-                console.log(`SVG dimensions - bbox: ${bbox.height}, rect: ${rect.height}, viewBox: ${viewBoxHeight}, final: ${svgHeight}`);
+                console.log(`Forced SVG height to: ${svgHeight}px`);
             }
 
             // Apply CSS styles with precise diagram height
@@ -431,19 +414,15 @@
                     transform: scale(${currentScale});
                     transform-origin: ${isScaled ? 'center center' : 'top left'};
                     transition: transform 0.3s ease;
-                    overflow: visible;
                     width: 100%;
-                    height: ${svgHeight}px;
-                    display: block;
-                    position: relative;
+                    height: ${svgHeight}px !important;
+                    overflow: visible;
                 }
                 
                 .tab-pane.active .mermaid svg {
-                    width: 100%;
-                    height: 100%;
-                    display: block;
-                    min-height: 100%;
-                    min-width: 100%;
+                    width: 100% !important;
+                    height: 100% !important;
+                    display: block !important;
                 }
                 
                 .tab-pane.active {
