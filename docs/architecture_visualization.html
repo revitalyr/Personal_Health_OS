@@ -401,11 +401,31 @@
             let svgHeight = 600; // increased default height
             if (mermaidSvgs.length > 0) {
                 const svg = mermaidSvgs[0];
-                // Force set SVG height directly
+                
+                // Force multiple height methods
                 svg.setAttribute('height', svgHeight);
                 svg.style.height = svgHeight + 'px';
+                svg.style.minHeight = svgHeight + 'px';
+                svg.style.maxHeight = svgHeight + 'px';
                 
-                console.log(`Forced SVG height to: ${svgHeight}px`);
+                // Modify viewBox to force height
+                const currentViewBox = svg.getAttribute('viewBox') || '0 0 800 600';
+                const parts = currentViewBox.split(' ');
+                const newViewBox = `${parts[0]} ${parts[1]} ${parts[2]} ${svgHeight}`;
+                svg.setAttribute('viewBox', newViewBox);
+                
+                // Add inline style to SVG
+                if (!svg.querySelector('style[data-height-forced]')) {
+                    const style = document.createElement('style');
+                    style.setAttribute('data-height-forced', 'true');
+                    style.textContent = `
+                        svg { height: ${svgHeight}px !important; min-height: ${svgHeight}px !important; max-height: ${svgHeight}px !important; }
+                        .mermaid { height: ${svgHeight}px !important; min-height: ${svgHeight}px !important; max-height: ${svgHeight}px !important; }
+                    `;
+                    svg.insertBefore(style, svg.firstChild);
+                }
+                
+                console.log(`Aggressively forced SVG height to: ${svgHeight}px`);
             }
 
             // Apply CSS styles with precise diagram height
