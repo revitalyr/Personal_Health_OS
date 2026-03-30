@@ -392,8 +392,16 @@
                 }
             }
 
-            // Применяем CSS стили с центрированием при масштабировании
-            const containerHeight = Math.min(600, window.innerHeight * 0.7);
+            // Получаем реальную высоту SVG для точного размера контейнера
+            const mermaidSvgs = activeTab.querySelectorAll('.mermaid svg');
+            let svgHeight = 400; // высота по умолчанию
+            if (mermaidSvgs.length > 0) {
+                const svg = mermaidSvgs[0];
+                const bbox = svg.getBBox ? svg.getBBox() : { height: 400 };
+                svgHeight = Math.max(200, Math.min(800, bbox.height + 50)); // ограничиваем высоту
+            }
+
+            // Применяем CSS стили с точной высотой диаграммы
             const isScaled = currentScale > 1.0;
             
             const style = document.createElement('style');
@@ -405,7 +413,7 @@
                     transition: transform 0.3s ease;
                     overflow: visible;
                     width: 100%;
-                    height: ${containerHeight}px;
+                    height: ${svgHeight}px;
                     display: flex;
                     justify-content: ${isScaled ? 'center' : 'flex-start'};
                     align-items: ${isScaled ? 'center' : 'flex-start'};
@@ -461,7 +469,7 @@
             // Добавляем новый стиль
             document.head.appendChild(style);
             
-            console.log(`Applied scale: ${currentScale}, container height: ${containerHeight}px, initial: ${isInitialLoad}, centered: ${isScaled}`);
+            console.log(`Applied scale: ${currentScale}, svg height: ${svgHeight}px, initial: ${isInitialLoad}, centered: ${isScaled}`);
         }
 
         function resetScale() {
@@ -665,6 +673,162 @@
     F --> Q
     G --> R
     H --> P</div>
+
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>🚪 API Gateway</h3>
+                        <p>Request routing, authentication, validation</p>
+                        <div class="tech-stack">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>• Rust + Axum</li>
+                                <li>• JWT Authentication</li>
+                                <li>• OpenTelemetry</li>
+                                <li>• Tower Middleware</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📅 Timeline Service</h3>
+                        <p>Event aggregation, timeline construction</p>
+                        <div class="tech-stack">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>• Rust + Tokio</li>
+                                <li>• PostgreSQL</li>
+                                <li>• Redis Cache</li>
+                                <li>• Event Sourcing</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📄 Document Processor</h3>
+                        <p>OCR, medical entity extraction, storage</p>
+                        <div class="tech-stack">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>• Tesseract OCR</li>
+                                <li>• AWS S3/Cloudflare R2</li>
+                                <li>• Medical NLP</li>
+                                <li>• Parallel Processing</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>🤖 AI Report Service</h3>
+                        <p>LLM-powered report generation, RAG</p>
+                        <div class="tech-stack">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>• OpenAI GPT-4/3.5</li>
+                                <li>• Ollama (Local Models)</li>
+                                <li>• Vector Embeddings</li>
+                                <li>• RAG Pipeline</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>👨‍⚕️ Doctor Access</h3>
+                        <p>Doctor authentication, patient access control</p>
+                        <div class="tech-stack">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>• Rust + Actix</li>
+                                <li>• Role-based Access</li>
+                                <li>• HIPAA Compliance</li>
+                                <li>• Audit Logging</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>👥 Patient Management</h3>
+                        <p>Patient management, medical records</p>
+                        <div class="tech-stack">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>• Rust + Actix</li>
+                                <li>• PostgreSQL</li>
+                                <li>• HIPAA Compliance</li>
+                                <li>• EMR Management</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📋 Appointment Scheduling</h3>
+                        <p>Appointment booking, calendars, reminders</p>
+                        <div class="tech-stack">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>• Rust + Tokio</li>
+                                <li>• Calendar Integration</li>
+                                <li>• Email/SMS Reminders</li>
+                                <li>• Real-time Sync</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>💰 Billing & Invoicing</h3>
+                        <p>Payment processing, invoice generation</p>
+                        <div class="tech-stack">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>• Stripe Integration</li>
+                                <li>• Invoice Generation</li>
+                                <li>• Payment Processing</li>
+                                <li>• Financial Reporting</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>🔐 Licence Management</h3>
+                        <p>License validation, compliance tracking</p>
+                        <div class="tech-stack">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>• License Validation</li>
+                                <li>• Compliance Tracking</li>
+                                <li>• Audit Reports</li>
+                                <li>• Regulatory Compliance</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📢 Notification Service</h3>
+                        <p>Email, SMS, push notifications</p>
+                        <div class="tech-stack">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>• SendGrid/SES</li>
+                                <li>• SMS Gateway</li>
+                                <li>• Push Notifications</li>
+                                <li>• Message Queuing</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="service-card">
+                        <h3>📊 Reporting Service</h3>
+                        <p>Analytics, reports, dashboards</p>
+                        <div class="tech-stack">
+                            <h4>Technologies:</h4>
+                            <ul>
+                                <li>• Grafana Integration</li>
+                                <li>• Real-time Analytics</li>
+                                <li>• Custom Reports</li>
+                                <li>• Data Visualization</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Микросервисы -->
@@ -875,7 +1039,7 @@
 
             <!-- База данных -->
             <section id="database" class="tab-pane">
-                <h2>Архитектура базы данных</h2>
+                <h2>Database Architecture</h2>
                 <div class="scale-controls">
                     <button class="scale-btn" onclick="changeScale(-0.1)">−</button>
                     <span class="scale-display">100%</span>
