@@ -340,6 +340,27 @@
         // Управление размером шрифта диаграмм
         let currentScale = 1.0;
         let isInitialLoad = true;
+        let currentTabIndex = 0;
+        const tabIds = ['overview', 'microservices', 'dataflow', 'database', 'security', 'deployment', 'performance', 'integration'];
+
+        // Обработка Ctrl+Tab для переключения вкладок
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Tab') {
+                e.preventDefault();
+                
+                // Определяем направление переключения
+                const direction = e.shiftKey ? -1 : 1;
+                currentTabIndex = (currentTabIndex + direction + tabIds.length) % tabIds.length;
+                
+                // Находим кнопку для активации
+                const targetTabId = tabIds[currentTabIndex];
+                const targetButton = document.querySelector(`.nav-tab[onclick*="${targetTabId}"]`);
+                
+                if (targetButton) {
+                    showTab({ currentTarget: targetButton }, targetTabId);
+                }
+            }
+        });
 
         function changeScale(delta) {
             // Предотвращаем авто-масштабирование после ручного изменения
@@ -371,22 +392,23 @@
                 }
             }
 
-            // Применяем CSS стили с оптимальной высотой
+            // Применяем CSS стили с центрированием при масштабировании
             const containerHeight = Math.min(600, window.innerHeight * 0.7);
+            const isScaled = currentScale > 1.0;
             
             const style = document.createElement('style');
             style.id = 'mermaid-scale-override';
             style.textContent = `
                 .tab-pane.active .mermaid {
                     transform: scale(${currentScale});
-                    transform-origin: top left;
+                    transform-origin: ${isScaled ? 'center center' : 'top left'};
                     transition: transform 0.3s ease;
                     overflow: visible;
                     width: 100%;
                     height: ${containerHeight}px;
                     display: flex;
-                    justify-content: center;
-                    align-items: flex-start;
+                    justify-content: ${isScaled ? 'center' : 'flex-start'};
+                    align-items: ${isScaled ? 'center' : 'flex-start'};
                 }
                 
                 .tab-pane.active .mermaid svg {
@@ -439,7 +461,7 @@
             // Добавляем новый стиль
             document.head.appendChild(style);
             
-            console.log(`Applied scale: ${currentScale}, container height: ${containerHeight}px, initial: ${isInitialLoad}`);
+            console.log(`Applied scale: ${currentScale}, container height: ${containerHeight}px, initial: ${isInitialLoad}, centered: ${isScaled}`);
         }
 
         function resetScale() {
@@ -498,26 +520,24 @@
         <!-- Заголовок -->
         <header class="header">
             <h1>🏥 Personal Health OS</h1>
-            <p>Система управления личным здоровьем - Архитектура и потоки данных</p>
+            <p>Personal Health Management System - Architecture and Data Flows</p>
         </header>
-
-        <!-- Навигация по вкладкам -->
         <nav class="nav-tabs">
-            <button class="nav-tab active" onclick="showTab(event, 'overview')">Обзор системы</button>
-            <button class="nav-tab" onclick="showTab(event, 'microservices')">Микросервисы</button>
-            <button class="nav-tab" onclick="showTab(event, 'dataflow')">Потоки данных</button>
-            <button class="nav-tab" onclick="showTab(event, 'database')">База данных</button>
-            <button class="nav-tab" onclick="showTab(event, 'security')">Безопасность</button>
-            <button class="nav-tab" onclick="showTab(event, 'deployment')">Развертывание</button>
-            <button class="nav-tab" onclick="showTab(event, 'performance')">Производительность</button>
-            <button class="nav-tab" onclick="showTab(event, 'integration')">Интеграции</button>
+            <button class="nav-tab active" onclick="showTab(event, 'overview')">System Architecture</button>
+            <button class="nav-tab" onclick="showTab(event, 'microservices')">Microservices</button>
+            <button class="nav-tab" onclick="showTab(event, 'dataflow')">Data Flows</button>
+            <button class="nav-tab" onclick="showTab(event, 'database')">Database</button>
+            <button class="nav-tab" onclick="showTab(event, 'security')">Security</button>
+            <button class="nav-tab" onclick="showTab(event, 'deployment')">Deployment</button>
+            <button class="nav-tab" onclick="showTab(event, 'performance')">Performance</button>
+            <button class="nav-tab" onclick="showTab(event, 'integration')">Integrations</button>
         </nav>
 
         <!-- Контент вкладок -->
         <main class="content">
             <!-- Обзор системы -->
             <section id="overview" class="tab-pane active">
-                <h2>Архитектура системы</h2>
+                <h2>System Architecture</h2>
                 <div class="scale-controls">
                     <button class="scale-btn" onclick="changeScale(-0.1)">−</button>
                     <span class="scale-display">100%</span>
@@ -525,34 +545,34 @@
                     <button class="scale-btn" onclick="resetScale()">⟲</button>
                 </div>
                 <div class="mermaid" data-original-definition="graph TB
-    subgraph &quot;Клиентские приложения&quot;
-        A[Мобильное приложение] 
-        B[Веб-клиент]
-        C[Десктопное приложение]
+    subgraph &quot;Client Applications&quot;
+        A[Mobile App] 
+        B[Web Client]
+        C[Desktop App]
     end
     
-    subgraph &quot;API слой&quot;
-        D[API Gateway&lt;br/&gt;Port 8080]
+    subgraph &quot;API Layer&quot;
+        D[API Gateway]
     end
     
-    subgraph &quot;Шина событий&quot;
+    subgraph &quot;Event Bus&quot;
         E[NATS Event Bus]
     end
     
-    subgraph &quot;Микросервисы&quot;
-        F[Timeline Service&lt;br/&gt;8081]
-        G[Document Processor&lt;br/&gt;8082]
-        H[AI Report Service&lt;br/&gt;8083]
-        I[Doctor Access&lt;br/&gt;8084]
-        J[Patient Management&lt;br/&gt;8085]
-        K[Appointment Scheduling&lt;br/&gt;8086]
-        L[Billing &amp; Invoicing&lt;br/&gt;8087]
-        M[Licence Management&lt;br/&gt;8088]
-        N[Notification Service&lt;br/&gt;8089]
-        O[Reporting Service&lt;br/&gt;8090]
+    subgraph &quot;Microservices&quot;
+        F[Timeline Service]
+        G[Document Processor]
+        H[AI Report Service]
+        I[Doctor Access]
+        J[Patient Management]
+        K[Appointment Scheduling]
+        L[Billing &amp; Invoicing]
+        M[Licence Management]
+        N[Notification Service]
+        O[Reporting Service]
     end
     
-    subgraph &quot;База данных&quot;
+    subgraph &quot;Database&quot;
         P[PostgreSQL]
         Q[Redis Cache]
         R[Object Storage]
@@ -585,34 +605,34 @@
     F --> Q
     G --> R
     H --> P">graph TB
-    subgraph "Клиентские приложения"
-        A[Мобильное приложение] 
-        B[Веб-клиент]
-        C[Десктопное приложение]
+    subgraph "Client Applications"
+        A[Mobile App] 
+        B[Web Client]
+        C[Desktop App]
     end
     
-    subgraph "API слой"
-        D[API Gateway<br/>Port 8080]
+    subgraph "API Layer"
+        D[API Gateway]
     end
     
-    subgraph "Шина событий"
+    subgraph "Event Bus"
         E[NATS Event Bus]
     end
     
-    subgraph "Микросервисы"
-        F[Timeline Service<br/>8081]
-        G[Document Processor<br/>8082]
-        H[AI Report Service<br/>8083]
-        I[Doctor Access<br/>8084]
-        J[Patient Management<br/>8085]
-        K[Appointment Scheduling<br/>8086]
-        L[Billing & Invoicing<br/>8087]
-        M[Licence Management<br/>8088]
-        N[Notification Service<br/>8089]
-        O[Reporting Service<br/>8090]
+    subgraph "Microservices"
+        F[Timeline Service]
+        G[Document Processor]
+        H[AI Report Service]
+        I[Doctor Access]
+        J[Patient Management]
+        K[Appointment Scheduling]
+        L[Billing & Invoicing]
+        M[Licence Management]
+        N[Notification Service]
+        O[Reporting Service]
     end
     
-    subgraph "База данных"
+    subgraph "Database"
         P[PostgreSQL]
         Q[Redis Cache]
         R[Object Storage]
