@@ -21,18 +21,9 @@ pub async fn create_event(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    // TODO: Validate and store event
-    let event_response = serde_json::json!({
-        "id": Uuid::new_v4(),
-        "patient_id": patient_id,
-        "event_type": payload.get("event_type").unwrap_or(&Value::String("Unknown".to_string())),
-        "timestamp": chrono::Utc::now(),
-        "payload": payload,
-        "status": "created"
-    });
-
-    trace_response!(StatusCode::CREATED, std::time::Duration::from_millis(20));
-    Ok(Json(event_response))
+    // API Gateway should proxy to timeline-service for actual event storage
+    // For now, return error indicating feature requires timeline-service integration
+    Err(StatusCode::NOT_IMPLEMENTED)
 }
 
 pub async fn get_event(
@@ -47,20 +38,9 @@ pub async fn get_event(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    // TODO: Fetch event from storage
-    let event = serde_json::json!({
-        "id": event_id,
-        "patient_id": patient_id,
-        "event_type": "SymptomCreated",
-        "timestamp": "2024-01-15T10:00:00Z",
-        "payload": {
-            "name": "Headache",
-            "severity": 5
-        }
-    });
-
-    trace_response!(StatusCode::OK, std::time::Duration::from_millis(15));
-    Ok(Json(event))
+    // API Gateway should proxy to timeline-service for actual event retrieval
+    // For now, return error indicating feature requires timeline-service integration
+    Err(StatusCode::NOT_IMPLEMENTED)
 }
 
 pub async fn list_events(
@@ -75,15 +55,7 @@ pub async fn list_events(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    // TODO: Fetch events from storage
-    let events = serde_json::json!({
-        "patient_id": patient_id,
-        "events": [],
-        "total_count": 0,
-        "page": 1,
-        "per_page": 20
-    });
-
-    trace_response!(StatusCode::OK, std::time::Duration::from_millis(30));
-    Ok(Json(events))
+    // API Gateway should proxy to timeline-service for actual event retrieval
+    // For now, return error indicating feature requires timeline-service integration
+    Err(StatusCode::NOT_IMPLEMENTED)
 }

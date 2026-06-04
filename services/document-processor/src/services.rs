@@ -387,7 +387,7 @@ impl DocumentService {
             EventType::LabResultReceived,
             serde_json::to_value(payload)?,
             "manual_input".to_string(),
-            input.test_date.and_hms_opt(0, 0, 0).unwrap().and_utc(),
+            input.test_date.and_hms_opt(0, 0, 0).unwrap_or_else(|| input.test_date.and_hms(0, 0, 0).unwrap()),
         );
 
         self.event_store.store_event(&event).await?;
@@ -436,7 +436,7 @@ impl DocumentService {
             EventType::Diagnosis,
             serde_json::to_value(payload)?,
             "manual_input".to_string(),
-            input.diagnosis_date.and_hms_opt(0, 0, 0).unwrap().and_utc(),
+            input.diagnosis_date.and_hms_opt(0, 0, 0).unwrap_or_else(|| input.diagnosis_date.and_hms(0, 0, 0).unwrap()).and_utc(),
         );
 
         self.event_store.store_event(&event).await?;

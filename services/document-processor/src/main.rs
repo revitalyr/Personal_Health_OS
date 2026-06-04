@@ -19,6 +19,7 @@ mod services;
 mod processors;
 mod storage;
 mod nats;
+mod middleware;
 
 use app::App;
 use config::Config;

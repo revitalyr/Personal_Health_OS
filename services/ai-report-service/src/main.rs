@@ -16,6 +16,7 @@ mod app;
 mod config;
 mod handlers;
 mod routes;
+mod middleware;
 
 use app::App;
 use config::Config;

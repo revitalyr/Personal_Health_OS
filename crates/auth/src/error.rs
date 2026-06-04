@@ -37,4 +37,10 @@ pub enum AuthError {
     
     #[error("Invalid phone number")]
     InvalidPhoneNumber,
+    
+    #[error("Feature not implemented: {0}")]
+    NotImplemented(String),
+    
+    #[error("JWT secret must be at least 32 bytes for HMAC-SHA256 security")]
+    InvalidJwtSecretLength,
 }

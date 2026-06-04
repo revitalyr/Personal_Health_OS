@@ -13,6 +13,7 @@ pub struct AuthService {
     jwt_secret: String,
     google_client_id: String,
     apple_client_id: String,
+    http_client: reqwest::Client,
 }
 
 impl AuthService {
@@ -21,15 +22,22 @@ impl AuthService {
         jwt_secret: String,
         google_client_id: String,
         apple_client_id: String,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, AuthError> {
+        // Validate JWT secret minimum length (HMAC-SHA256 requires ≥32 bytes)
+        if jwt_secret.len() < 32 {
+            return Err(AuthError::InvalidJwtSecretLength);
+        }
+        
+        Ok(Self {
             db,
             jwt_secret,
             google_client_id,
             apple_client_id,
-        }
+            http_client: reqwest::Client::new(),
+        })
     }
 
+    /// Register a new user with email and password
     pub async fn register_email(&self, request: RegisterRequest) -> Result<AuthToken, AuthError> {
         // Check if email already exists
         let existing = sqlx::query!(
@@ -43,8 +51,11 @@ impl AuthService {
             return Err(AuthError::EmailAlreadyExists);
         }
 
-        // Hash password
-        let password_hash = hash(&request.password, DEFAULT_COST)?;
+        // Hash password (CPU-intensive, use spawn_blocking to avoid blocking tokio worker)
+        let password = request.password.clone();
+        let password_hash = tokio::task::spawn_blocking(move || {
+            hash(&password, DEFAULT_COST)
+        }).await??;
 
         // Create account
         let account_id = Uuid::new_v4();
@@ -83,6 +94,7 @@ impl AuthService {
         self.generate_tokens(account_id).await
     }
 
+    /// Login with email and password
     pub async fn login_email(&self, email: &str, password: &str) -> Result<AuthToken, AuthError> {
         let account = sqlx::query!(
             "SELECT id, password_hash FROM accounts WHERE email = $1",
@@ -92,7 +104,12 @@ impl AuthService {
         .await?
         .ok_or(AuthError::InvalidCredentials)?;
 
-        let is_valid = verify(password, &account.password_hash)?;
+        // Verify password (CPU-intensive, use spawn_blocking to avoid blocking tokio worker)
+        let password_hash = account.password_hash.clone();
+        let password_to_verify = password.to_string();
+        let is_valid = tokio::task::spawn_blocking(move || {
+            verify(&password_to_verify, &password_hash)
+        }).await??;
         if !is_valid {
             return Err(AuthError::InvalidCredentials);
         }
@@ -170,12 +187,15 @@ impl AuthService {
         self.generate_tokens(account_id).await
     }
 
-    pub async fn login_apple(&self, id_token: &str) -> Result<AuthToken, AuthError> {
-        // Similar to Google but with Apple's verification
-        // For brevity, simplified implementation
-        todo!("Implement Apple Sign In verification")
+    /// Login with Apple Sign In (not yet implemented)
+    pub async fn login_apple(&self, _id_token: &str) -> Result<AuthToken, AuthError> {
+        // Apple Sign In verification requires Apple's public keys and JWT verification
+        // Similar to Google but with Apple's specific requirements
+        // This feature is not yet implemented
+        Err(AuthError::NotImplemented("Apple Sign In verification is not yet implemented".to_string()))
     }
 
+    /// Send OTP code to phone number
     pub async fn send_otp(&self, phone: &str) -> Result<(), AuthError> {
         // Generate 6-digit code
         let code: String = (0..6)
@@ -206,6 +226,7 @@ impl AuthService {
         Ok(())
     }
 
+    /// Verify OTP code and return auth token
     pub async fn verify_otp(&self, phone: &str, code: &str) -> Result<AuthToken, AuthError> {
         let session = sqlx::query!(
             r#"
@@ -288,6 +309,7 @@ impl AuthService {
         .await
     }
 
+    /// Get all profiles for an account
     pub async fn get_profiles(&self, account_id: Uuid) -> Result<Vec<UserProfile>, AuthError> {
         sqlx::query_as!(
             UserProfile,
@@ -304,6 +326,7 @@ impl AuthService {
         .await
     }
 
+    /// Generate JWT access and refresh tokens for an account
     async fn generate_tokens(&self, account_id: Uuid) -> Result<AuthToken, AuthError> {
         let now = Utc::now();
         let expires_at = now + Duration::hours(24);
@@ -346,6 +369,7 @@ impl AuthService {
         })
     }
 
+    /// Verify JWT token and return account ID
     pub async fn verify_token(&self, token: &str) -> Result<Uuid, AuthError> {
         let mut validation = Validation::new(Algorithm::HS256);
         validation.set_issuer(&["health_os"]);
@@ -361,10 +385,10 @@ impl AuthService {
         Ok(Uuid::parse_str(sub)?)
     }
 
+    /// Verify Google OAuth ID token using JWKS
     async fn verify_google_id_token(&self, id_token: &str) -> Result<String, AuthError> {
         // Fetch Google's public keys from JWKS endpoint
-        let client = reqwest::Client::new();
-        let jwks_response = client
+        let jwks_response = self.http_client
             .get("https://www.googleapis.com/oauth2/v3/certs")
             .send()
             .await

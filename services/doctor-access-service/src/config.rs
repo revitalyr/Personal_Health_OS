@@ -19,7 +19,7 @@ impl Config {
             .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5432/health_os".to_string());
 
         let jwt_secret = env::var("JWT_SECRET")
-            .unwrap_or_else(|_| "your-super-secret-jwt-key".to_string());
+            .unwrap_or_else(|_| "your-super-secret-jwt-key-change-in-production".to_string());
 
         Ok(Config {
             port,

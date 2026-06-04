@@ -1,12 +1,14 @@
 use storage::{EventStore, DatabaseConfig};
 use std::sync::Arc;
 use crate::{services::TimelineService, nats::NatsClient};
+use auth::AuthService;
 
 #[derive(Clone)]
 pub struct App {
     pub event_store: Arc<EventStore>,
     pub timeline_service: Arc<TimelineService>,
     pub nats_client: Arc<NatsClient>,
+    pub auth_service: Arc<AuthService>,
 }
 
 impl App {
@@ -33,12 +35,20 @@ impl App {
             nats_client.clone(),
         ));
 
+        // Initialize auth service
+        let auth_service = Arc::new(AuthService::new(
+            config.jwt_secret.clone(),
+            "health_os".to_string(),
+            "health_os_api".to_string(),
+        )?);
+
         tracing::info!("Timeline Service application initialized");
 
         Ok(Self {
             event_store,
             timeline_service,
             nats_client,
+            auth_service,
         })
     }
 }

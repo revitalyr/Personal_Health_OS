@@ -13,6 +13,7 @@ pub struct Config {
     pub ocr_languages: Vec<String>,
     pub max_file_size: usize,
     pub supported_formats: Vec<String>,
+    pub jwt_secret: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -69,6 +70,9 @@ impl Config {
             .map(|s| s.trim().to_string())
             .collect();
 
+        let jwt_secret = env::var("JWT_SECRET")
+            .unwrap_or_else(|_| "your-super-secret-jwt-key-change-in-production".to_string());
+
         Ok(Config {
             port,
             database_url,
@@ -80,6 +84,7 @@ impl Config {
             ocr_languages,
             max_file_size,
             supported_formats,
+            jwt_secret,
         })
     }
 }

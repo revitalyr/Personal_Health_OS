@@ -41,7 +41,7 @@ async fn register(
         state.config.jwt_secret.clone(),
         state.config.google_client_id.clone(),
         state.config.apple_client_id.clone(),
-    );
+    )?;
 
     let tokens = auth_service.register_email(request).await?;
 
@@ -60,7 +60,7 @@ async fn login(
         state.config.jwt_secret.clone(),
         state.config.google_client_id.clone(),
         state.config.apple_client_id.clone(),
-    );
+    )?;
 
     let tokens = match request.provider {
         crate::auth::ProviderType::Email => {
@@ -109,7 +109,7 @@ async fn login_google(
         state.config.jwt_secret.clone(),
         state.config.google_client_id.clone(),
         state.config.apple_client_id.clone(),
-    );
+    )?;
 
     let tokens = auth_service.login_google(id_token).await?;
 
@@ -133,7 +133,7 @@ async fn login_apple(
         state.config.jwt_secret.clone(),
         state.config.google_client_id.clone(),
         state.config.apple_client_id.clone(),
-    );
+    )?;
 
     let tokens = auth_service.login_apple(id_token).await?;
 
@@ -157,7 +157,7 @@ async fn send_otp(
         state.config.jwt_secret.clone(),
         state.config.google_client_id.clone(),
         state.config.apple_client_id.clone(),
-    );
+    )?;
 
     auth_service.send_otp(phone).await?;
 
@@ -186,7 +186,7 @@ async fn verify_otp(
         state.config.jwt_secret.clone(),
         state.config.google_client_id.clone(),
         state.config.apple_client_id.clone(),
-    );
+    )?;
 
     let tokens = auth_service.verify_otp(phone, code).await?;
 
@@ -205,7 +205,7 @@ async fn get_profiles(
         state.config.jwt_secret.clone(),
         state.config.google_client_id.clone(),
         state.config.apple_client_id.clone(),
-    );
+    )?;
 
     let profiles = auth_service.get_profiles(account_id).await?;
 
@@ -225,7 +225,7 @@ async fn create_profile(
         state.config.jwt_secret.clone(),
         state.config.google_client_id.clone(),
         state.config.apple_client_id.clone(),
-    );
+    )?;
 
     let profile = auth_service.create_profile(account_id, request).await?;
 

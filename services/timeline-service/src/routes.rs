@@ -15,5 +15,6 @@ pub fn create_router(app: App) -> Router {
         .route("/patients/:patient_id/events/:event_id", get(handlers::events::get_event))
         .route("/patients/:patient_id/events", get(handlers::events::list_events))
         .route("/patients/:patient_id/anomalies", get(handlers::timeline::get_anomalies))
+        .layer(middleware::from_fn_with_state(app.clone(), middleware::auth_middleware))
         .with_state(app)
 }

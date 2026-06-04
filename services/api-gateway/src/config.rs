@@ -25,7 +25,7 @@ impl Config {
             .unwrap_or(8080);
 
         let jwt_secret = env::var("JWT_SECRET")
-            .unwrap_or_else(|_| "your-super-secret-jwt-key".to_string());
+            .unwrap_or_else(|_| "your-super-secret-jwt-key-change-in-production".to_string());
 
         let database_url = env::var("DATABASE_URL")
             .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5432/health_os".to_string());

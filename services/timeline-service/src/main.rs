@@ -18,6 +18,7 @@ mod handlers;
 mod routes;
 mod services;
 mod nats;
+mod middleware;
 
 use app::App;
 use config::Config;

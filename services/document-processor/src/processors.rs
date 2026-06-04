@@ -233,29 +233,33 @@ impl MedicalEntityExtractor {
         // Extract dates
         let date_regex = Regex::new(r"\b\d{2}\.\d{2}\.\d{4}\b")?;
         for capture in date_regex.captures_iter(text) {
-            let date_str = capture.get(0).unwrap().as_str();
-            entities.push(MedicalEntity {
-                text: date_str.to_string(),
-                entity_type: "date".to_string(),
-                confidence: 0.9,
-                start_pos: capture.get(0).unwrap().start(),
-                end_pos: capture.get(0).unwrap().end(),
-                normalized_value: Some(date_str.to_string()),
-            });
+            if let Some(match_) = capture.get(0) {
+                let date_str = match_.as_str();
+                entities.push(MedicalEntity {
+                    text: date_str.to_string(),
+                    entity_type: "date".to_string(),
+                    confidence: 0.9,
+                    start_pos: match_.start(),
+                    end_pos: match_.end(),
+                    normalized_value: Some(date_str.to_string()),
+                });
+            }
         }
         
         // Extract lab values (e.g., "120/80", "5.2", "15.3")
         let lab_value_regex = Regex::new(r"\b\d+\.?\d*\s*(?:мм рт\. ст\.|ммоль/л|нг/мл|ед/л)\b")?;
         for capture in lab_value_regex.captures_iter(text) {
-            let value_str = capture.get(0).unwrap().as_str();
-            entities.push(MedicalEntity {
-                text: value_str.to_string(),
-                entity_type: "lab_value".to_string(),
-                confidence: 0.8,
-                start_pos: capture.get(0).unwrap().start(),
-                end_pos: capture.get(0).unwrap().end(),
-                normalized_value: Some(value_str.to_string()),
-            });
+            if let Some(match_) = capture.get(0) {
+                let value_str = match_.as_str();
+                entities.push(MedicalEntity {
+                    text: value_str.to_string(),
+                    entity_type: "lab_value".to_string(),
+                    confidence: 0.8,
+                    start_pos: match_.start(),
+                    end_pos: match_.end(),
+                    normalized_value: Some(value_str.to_string()),
+                });
+            }
         }
         
         // Extract medications (simplified)
@@ -267,15 +271,17 @@ impl MedicalEntityExtractor {
         for pattern in &medication_patterns {
             let med_regex = Regex::new(pattern)?;
             for capture in med_regex.captures_iter(text) {
-                let med_str = capture.get(0).unwrap().as_str();
-                entities.push(MedicalEntity {
-                    text: med_str.to_string(),
-                    entity_type: "medication".to_string(),
-                    confidence: 0.85,
-                    start_pos: capture.get(0).unwrap().start(),
-                    end_pos: capture.get(0).unwrap().end(),
-                    normalized_value: Some(med_str.to_lowercase()),
-                });
+                if let Some(match_) = capture.get(0) {
+                    let med_str = match_.as_str();
+                    entities.push(MedicalEntity {
+                        text: med_str.to_string(),
+                        entity_type: "medication".to_string(),
+                        confidence: 0.85,
+                        start_pos: match_.start(),
+                        end_pos: match_.end(),
+                        normalized_value: Some(med_str.to_lowercase()),
+                    });
+                }
             }
         }
         
@@ -288,15 +294,17 @@ impl MedicalEntityExtractor {
         for pattern in &symptom_patterns {
             let symptom_regex = Regex::new(pattern)?;
             for capture in symptom_regex.captures_iter(text) {
-                let symptom_str = capture.get(0).unwrap().as_str();
-                entities.push(MedicalEntity {
-                    text: symptom_str.to_string(),
-                    entity_type: "symptom".to_string(),
-                    confidence: 0.8,
-                    start_pos: capture.get(0).unwrap().start(),
-                    end_pos: capture.get(0).unwrap().end(),
-                    normalized_value: Some(symptom_str.to_lowercase()),
-                });
+                if let Some(match_) = capture.get(0) {
+                    let symptom_str = match_.as_str();
+                    entities.push(MedicalEntity {
+                        text: symptom_str.to_string(),
+                        entity_type: "symptom".to_string(),
+                        confidence: 0.8,
+                        start_pos: match_.start(),
+                        end_pos: match_.end(),
+                        normalized_value: Some(symptom_str.to_lowercase()),
+                    });
+                }
             }
         }
         

@@ -15,32 +15,52 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
+/// JWT claims structure for authentication tokens
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String, // User ID
+    /// User ID (subject)
+    pub sub: String,
+    /// User email
     pub email: String,
-    pub exp: i64, // Expiration time
-    pub iat: i64, // Issued at
-    pub iss: String, // Issuer
-    pub aud: String, // Audience
+    /// Expiration time (Unix timestamp)
+    pub exp: i64,
+    /// Issued at time (Unix timestamp)
+    pub iat: i64,
+    /// Issuer identifier
+    pub iss: String,
+    /// Audience identifier
+    pub aud: String,
 }
 
+/// User information structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
+    /// Unique user identifier
     pub id: Uuid,
+    /// User email address
     pub email: String,
+    /// User display name
     pub name: String,
+    /// Account creation timestamp
     pub created_at: chrono::DateTime<Utc>,
+    /// Last update timestamp
     pub updated_at: chrono::DateTime<Utc>,
 }
 
+/// User profile information for patient profiles
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserProfile {
+    /// Unique profile identifier
     pub id: Uuid,
+    /// Associated user ID
     pub user_id: Uuid,
+    /// Profile name
     pub name: String,
-    pub relationship: String, // self, child, parent, spouse, etc.
+    /// Relationship to the account holder (self, child, parent, spouse, etc.)
+    pub relationship: String,
+    /// Date of birth
     pub date_of_birth: Option<chrono::NaiveDate>,
+    /// Profile creation timestamp
     pub created_at: chrono::DateTime<Utc>,
 }
 

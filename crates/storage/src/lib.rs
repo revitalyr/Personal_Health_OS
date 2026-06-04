@@ -23,17 +23,33 @@ pub enum StorageError {
 
 pub type Result<T> = std::result::Result<T, StorageError>;
 
+/// Database configuration for PostgreSQL connection
 #[derive(Debug, Clone)]
 pub struct DatabaseConfig {
+    /// Database host address
     pub host: String,
+    /// Database port
     pub port: u16,
+    /// Database name
     pub database: String,
+    /// Database username
     pub username: String,
+    /// Database password
     pub password: String,
+    /// Maximum number of connections in the pool
     pub max_connections: u32,
 }
 
 impl DatabaseConfig {
+    /// Create database configuration from environment variables
+    /// 
+    /// Environment variables:
+    /// - DB_HOST (default: "localhost")
+    /// - DB_PORT (default: "5432")
+    /// - DB_NAME (default: "health_os")
+    /// - DB_USER (default: "postgres")
+    /// - DB_PASSWORD (default: "postgres")
+    /// - DB_MAX_CONNECTIONS (default: "10")
     pub fn from_env() -> Self {
         Self {
             host: env::var("DB_HOST").unwrap_or_else(|_| "localhost".to_string()),
@@ -59,12 +75,20 @@ impl DatabaseConfig {
     }
 }
 
+/// Event store for managing medical events in PostgreSQL
 #[derive(Debug, Clone)]
 pub struct EventStore {
+    /// PostgreSQL connection pool
     pub pool: PgPool,
 }
 
 impl EventStore {
+    /// Create a new EventStore with the given database configuration
+    /// 
+    /// This will:
+    /// - Connect to PostgreSQL
+    /// - Run database migrations
+    /// - Set up the connection pool
     pub async fn new(config: DatabaseConfig) -> Result<Self> {
         let connection_string = config.connection_string();
         
@@ -87,6 +111,7 @@ impl EventStore {
         Ok(Self { pool })
     }
 
+    /// Store a medical event in the database
     pub async fn store_event(&self, event: &MedicalEvent) -> Result<()> {
         let query = r#"
             INSERT INTO medical_events (
@@ -112,6 +137,7 @@ impl EventStore {
         Ok(())
     }
 
+    /// Retrieve all events for a specific patient, ordered by timestamp
     pub async fn get_events_by_patient(&self, patient_id: Uuid) -> Result<Vec<MedicalEvent>> {
         let query = r#"
             SELECT id, patient_id, event_type, timestamp, payload, 
@@ -163,6 +189,7 @@ impl EventStore {
         Ok(events)
     }
 
+    /// Retrieve events for a specific patient with optional filtering
     pub async fn get_events_by_patient_with_filter(
         &self,
         patient_id: Uuid,
@@ -250,6 +277,7 @@ impl EventStore {
         Ok(events)
     }
 
+    /// Retrieve a specific event by ID
     pub async fn get_event_by_id(&self, event_id: Uuid) -> Result<Option<MedicalEvent>> {
         let query = r#"
             SELECT id, patient_id, event_type, timestamp, payload, 

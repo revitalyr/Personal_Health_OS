@@ -8,6 +8,7 @@ pub struct Config {
     pub nats_url: String,
     pub redis_url: Option<String>,
     pub max_connections: u32,
+    pub jwt_secret: String,
 }
 
 impl Config {
@@ -30,12 +31,16 @@ impl Config {
             .parse()
             .unwrap_or(10);
 
+        let jwt_secret = env::var("JWT_SECRET")
+            .unwrap_or_else(|_| "your-super-secret-jwt-key-change-in-production".to_string());
+
         Ok(Config {
             port,
             database_url,
             nats_url,
             redis_url,
             max_connections,
+            jwt_secret,
         })
     }
 }

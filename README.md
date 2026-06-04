@@ -1,6 +1,6 @@
 # 🏥 Health OS - Complete Healthcare Management Platform
 
-[![Release](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/revitalyr/Personal_Health_OS/releases/tag/v1.0.0)
+[![Release](https://img.shields.io/badge/release-v2.0.0-blue.svg)](https://github.com/revitalyr/Personal_Health_OS/releases/tag/v2.0.0)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org/)
 [![Node.js](https://img.shields.io/badge/node.js-18+-green.svg)](https://nodejs.org/)
@@ -18,7 +18,7 @@ Health OS is a unified healthcare platform that provides:
 - **Secure QR-based doctor access** with temporary tokens
 - **Real-time timeline aggregation** and anomaly detection
 - **Multi-provider authentication** (Email, Google, Apple, Phone+OTP)
-- **Mobile apps** for iOS and Android with offline support
+- **Mobile apps** for iOS (SwiftUI) and Android (Kotlin) with offline support
 
 ### 🏥 **Hospital Management System**
 - **Electronic Medical Records (EMR)** with complete patient workflows
@@ -156,19 +156,19 @@ cd web/doctor && npm install && npm run dev
 
 ## 🔒 Security
 
-- **Encryption**: AES-256 at rest, TLS 1.3 in transit
+- **Encryption**: TLS 1.3 in transit (at-rest encryption not yet implemented)
 - **Authentication**: JWT tokens with 24-hour expiration
 - **Authorization**: Role-based access control (RBAC)
 - **Audit Logging**: Complete activity tracking
-- **Compliance**: HIPAA/GDPR ready
+- **Compliance**: HIPAA/GDPR ready (requires at-rest encryption for full compliance)
 - **Licence Security**: RSA-2048 with hardware fingerprinting
 
 ## 📱 Cross-Platform Support
 
 | Platform | Technology | Status |
 |----------|-------------|---------|
-| **iOS** | React Native | ✅ Ready |
-| **Android** | React Native | ✅ Ready |
+| **iOS** | SwiftUI | ✅ Implemented |
+| **Android** | Kotlin | ✅ Implemented |
 | **Windows** | Tauri | ✅ Ready |
 | **macOS** | Tauri | ✅ Ready |
 | **Linux** | Tauri | ✅ Ready |
@@ -185,32 +185,31 @@ cd web/doctor && npm install && npm run dev
 - **Authentication**: JWT, OAuth2
 
 ### Frontend
-- **Mobile**: React Native 0.72
+- **Mobile**: SwiftUI (iOS), Kotlin (Android)
 - **Desktop**: Tauri + React
 - **Web**: Next.js 13+
 - **UI**: Tailwind CSS, React Native Elements
 
 ### DevOps
-- **Containerization**: Docker & Docker Compose
-- **Orchestration**: Kubernetes ready
+- **Containerization**: Docker & Docker Compose (see infrastructure/docker/)
 - **Monitoring**: OpenTelemetry, Prometheus, Grafana
-- **CI/CD**: GitHub Actions ready
+- **CI/CD**: GitHub Actions (not yet implemented)
 
 ## 📈 Roadmap
 
-### v1.1 (Q2 2024)
+### v2.1 (Q2 2026)
 - [ ] Advanced medical entity extraction
 - [ ] Integration with EHR systems
 - [ ] Real-time collaboration features
 - [ ] Enhanced mobile offline support
 
-### v1.2 (Q3 2024)
+### v2.2 (Q3 2026)
 - [ ] Machine learning for anomaly detection
 - [ ] Voice symptom recording
 - [ ] Wearable device integration
 - [ ] Multi-language support
 
-### v2.0 (Q4 2024)
+### v3.0 (Q4 2026)
 - [ ] Full HIPAA compliance certification
 - [ ] Enterprise SSO integration
 - [ ] Advanced analytics dashboard

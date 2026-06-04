@@ -8,6 +8,7 @@ pub struct Config {
     pub nats_url: String,
     pub openai_api_key: Option<String>,
     pub ollama_url: Option<String>,
+    pub jwt_secret: String,
 }
 
 impl Config {
@@ -26,12 +27,16 @@ impl Config {
         let openai_api_key = env::var("OPENAI_API_KEY").ok();
         let ollama_url = env::var("OLLAMA_URL").ok();
 
+        let jwt_secret = env::var("JWT_SECRET")
+            .unwrap_or_else(|_| "your-super-secret-jwt-key-change-in-production".to_string());
+
         Ok(Config {
             port,
             database_url,
             nats_url,
             openai_api_key,
             ollama_url,
+            jwt_secret,
         })
     }
 }

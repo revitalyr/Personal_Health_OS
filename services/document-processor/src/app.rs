@@ -1,6 +1,7 @@
 use storage::{EventStore, DatabaseConfig};
 use std::sync::Arc;
 use crate::{services::DocumentService, nats::NatsClient, storage::DocumentStorage};
+use auth::AuthService;
 
 #[derive(Clone)]
 pub struct App {
@@ -8,6 +9,7 @@ pub struct App {
     pub document_service: Arc<DocumentService>,
     pub nats_client: Arc<NatsClient>,
     pub document_storage: Arc<DocumentStorage>,
+    pub auth_service: Arc<AuthService>,
 }
 
 impl App {
@@ -38,6 +40,13 @@ impl App {
             config.clone(),
         ));
 
+        // Initialize auth service
+        let auth_service = Arc::new(AuthService::new(
+            config.jwt_secret.clone(),
+            "health_os".to_string(),
+            "health_os_api".to_string(),
+        )?);
+
         tracing::info!("Document Processor application initialized");
 
         Ok(Self {
@@ -45,6 +54,7 @@ impl App {
             document_service,
             nats_client,
             document_storage,
+            auth_service,
         })
     }
 }

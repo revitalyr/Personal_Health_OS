@@ -3,6 +3,7 @@ use axum::{
     http::StatusCode,
     response::Json,
 };
+use event_model::{MedicalEvent, EventType};
 use serde_json::Value;
 use uuid::Uuid;
 
@@ -21,24 +22,52 @@ pub async fn create_event(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    // TODO: Validate event structure and convert to MedicalEvent
-    // For now, create a mock event
+    // Validate event structure and convert to MedicalEvent
+    let event_type_str = payload.get("event_type")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Unknown");
 
-    let event_id = Uuid::new_v4();
+    let event_type = match event_type_str {
+        "SymptomCreated" => EventType::SymptomCreated,
+        "MedicationStarted" => EventType::MedicationStarted,
+        "MedicationStopped" => EventType::MedicationStopped,
+        "LabResultReceived" => EventType::LabResultReceived,
+        "DoctorVisit" => EventType::DoctorVisit,
+        "Diagnosis" => EventType::Diagnosis,
+        "DocumentUploaded" => EventType::DocumentUploaded,
+        "ReminderTriggered" => EventType::ReminderTriggered,
+        _ => EventType::SymptomCreated, // Default fallback
+    };
 
-    // TODO: Store event in database
-    // let event = MedicalEvent::new(...);
-    // app.event_store.store_event(&event).await?;
+    let event = MedicalEvent::new(
+        patient_id,
+        event_type,
+        payload,
+        "api_gateway".to_string(),
+    );
 
-    // TODO: Publish event to NATS
-    // app.nats_client.publish_event(&event).await?;
+    // Store event in database
+    app.event_store.store_event(&event)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to store event: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    // Publish event to NATS
+    app.nats_client.publish_event(&event)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to publish event: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     let response = serde_json::json!({
-        "id": event_id,
+        "id": event.id,
         "patient_id": patient_id,
-        "event_type": payload.get("event_type").unwrap_or(&Value::String("Unknown".to_string())),
-        "timestamp": chrono::Utc::now(),
-        "payload": payload,
+        "event_type": format!("{:?}", event.event_type),
+        "timestamp": event.timestamp,
+        "payload": event.payload,
         "status": "created",
         "message": "Event created successfully"
     });

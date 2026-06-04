@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         database_url: std::env::var("DATABASE_URL")
             .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5432/health_os".to_string()),
         jwt_secret: std::env::var("JWT_SECRET")
-            .unwrap_or_else(|_| "your-super-secret-jwt-key".to_string()),
+            .unwrap_or_else(|_| "your-super-secret-jwt-key-change-in-production".to_string()),
         port: std::env::var("PORT")
             .unwrap_or_else(|_| "8085".to_string())
             .parse()

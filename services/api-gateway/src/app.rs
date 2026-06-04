@@ -12,7 +12,7 @@ impl App {
             config.jwt_secret.clone(),
             "health_os".to_string(),
             "health_os_api".to_string(),
-        ));
+        )?);
 
         Ok(Self { auth_service })
     }

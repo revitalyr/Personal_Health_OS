@@ -1,28 +1,45 @@
 use chrono::{DateTime, Utc};
 use event_model::{MedicalEvent, EventType, Result, EventError};
+use serde::Serialize;
 use std::collections::HashMap;
 use uuid::Uuid;
 
+const MAX_EVENTS_PER_DAY: usize = 50;
+
+/// Timeline representation for a patient's medical events
 #[derive(Debug, Clone, Serialize)]
 pub struct Timeline {
+    /// Patient ID
     pub patient_id: Uuid,
+    /// Ordered list of medical events
     pub events: Vec<MedicalEvent>,
+    /// Timestamp when this timeline was generated
     pub generated_at: DateTime<Utc>,
 }
 
+/// Summary statistics for a timeline
 #[derive(Debug, Clone)]
 pub struct TimelineSummary {
+    /// Total number of events
     pub total_events: usize,
+    /// Date range (start, end)
     pub date_range: (DateTime<Utc>, DateTime<Utc>),
+    /// Count of events by type
     pub event_types: HashMap<EventType, usize>,
+    /// Most recent events (last 10)
     pub recent_events: Vec<MedicalEvent>,
 }
 
+/// Filter options for timeline queries
 #[derive(Debug, Clone)]
 pub struct TimelineFilter {
+    /// Optional start date for filtering
     pub start_date: Option<DateTime<Utc>>,
+    /// Optional end date for filtering
     pub end_date: Option<DateTime<Utc>>,
+    /// Optional event type filter
     pub event_types: Option<Vec<EventType>>,
+    /// Optional limit on number of events
     pub limit: Option<usize>,
 }
 
@@ -37,9 +54,13 @@ impl Default for TimelineFilter {
     }
 }
 
+/// Timeline engine for building and analyzing medical event timelines
 pub struct TimelineEngine;
 
 impl TimelineEngine {
+    /// Build a timeline from a list of medical events
+    /// 
+    /// Events are sorted by timestamp in ascending order
     pub fn build_timeline(events: Vec<MedicalEvent>) -> Timeline {
         let patient_id = events.first().map(|e| e.patient_id).unwrap_or_default();
         let mut sorted_events = events;
@@ -54,6 +75,7 @@ impl TimelineEngine {
         }
     }
 
+    /// Build a filtered timeline from events based on filter criteria
     pub fn build_filtered_timeline(
         events: Vec<MedicalEvent>,
         filter: TimelineFilter,
@@ -101,6 +123,7 @@ impl TimelineEngine {
         })
     }
 
+    /// Generate a summary statistics for a timeline
     pub fn generate_summary(timeline: &Timeline) -> TimelineSummary {
         let total_events = timeline.events.len();
         
@@ -151,6 +174,7 @@ impl TimelineEngine {
         }
     }
 
+    /// Detect anomalies in the timeline (duplicates, future events, unusual patterns)
     pub fn detect_anomalies(timeline: &Timeline) -> Vec<Anomaly> {
         let mut anomalies = Vec::new();
         
@@ -198,7 +222,7 @@ impl TimelineEngine {
         
         // Check for days with too many events (potential data entry error)
         for (date, events) in events_by_day {
-            if events.len() > 50 {
+            if events.len() > MAX_EVENTS_PER_DAY {
                 anomalies.push(Anomaly::HighEventFrequency {
                     date,
                     event_count: events.len(),
@@ -209,6 +233,7 @@ impl TimelineEngine {
         anomalies
     }
 
+    /// Export timeline to specified format (JSON, Text, or CSV)
     pub fn export_timeline(timeline: &Timeline, format: ExportFormat) -> Result<String> {
         match format {
             ExportFormat::Json => {
@@ -285,26 +310,34 @@ impl TimelineEngine {
     }
 }
 
+/// Anomaly detected in a timeline
 #[derive(Debug, Clone)]
 pub enum Anomaly {
+    /// Duplicate event detected (same type and timestamp)
     DuplicateEvent {
         event_id: Uuid,
         timestamp: DateTime<Utc>,
     },
+    /// Event with timestamp in the future
     FutureEvent {
         event_id: Uuid,
         timestamp: DateTime<Utc>,
     },
+    /// Unusually high event frequency on a specific day
     HighEventFrequency {
         date: chrono::NaiveDate,
         event_count: usize,
     },
 }
 
+/// Export format for timeline data
 #[derive(Debug, Clone)]
 pub enum ExportFormat {
+    /// JSON format
     Json,
+    /// Plain text format
     Text,
+    /// CSV format
     Csv,
 }
 
