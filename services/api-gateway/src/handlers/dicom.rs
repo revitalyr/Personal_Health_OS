@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State, Multipart},
+    extract::{Path, State, Multipart, Extension},
     http::StatusCode,
     response::Json,
 };

@@ -67,11 +67,10 @@ services:
       context: ../../
       dockerfile: infrastructure/docker/Dockerfile.timeline-service
     container_name: health-os-timeline-service
-    ports:
-      - "8081:8081"
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/health_os
       - NATS_URL=nats://nats:4222
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
       - RUST_LOG=info
     depends_on:
       - postgres
@@ -85,8 +84,6 @@ services:
       context: ../../
       dockerfile: infrastructure/docker/Dockerfile.document-processor
     container_name: health-os-document-processor
-    ports:
-      - "8082:8082"
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/health_os
       - NATS_URL=nats://nats:4222
@@ -94,6 +91,7 @@ services:
       - STORAGE_PATH=/app/storage
       - OCR_LANGUAGES=rus,eng
       - MAX_FILE_SIZE=52428800
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
       - RUST_LOG=info
     volumes:
       - document_storage:/app/storage
@@ -109,13 +107,12 @@ services:
       context: ../../
       dockerfile: infrastructure/docker/Dockerfile.ai-report-service
     container_name: health-os-ai-report-service
-    ports:
-      - "8083:8083"
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/health_os
       - NATS_URL=nats://nats:4222
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OLLAMA_URL=http://ollama:11434
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
       - RUST_LOG=info
     depends_on:
       - postgres
@@ -129,8 +126,6 @@ services:
       context: ../../
       dockerfile: infrastructure/docker/Dockerfile.doctor-access-service
     container_name: health-os-doctor-access-service
-    ports:
-      - "8084:8084"
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/health_os
       - JWT_SECRET=your-super-secret-jwt-key-change-in-production

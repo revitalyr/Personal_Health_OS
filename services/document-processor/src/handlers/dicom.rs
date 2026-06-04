@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State, Multipart},
+    extract::{Path, State, Multipart, Extension},
     http::StatusCode,
     response::Json,
 };
@@ -185,9 +185,15 @@ pub async fn get_dicom_image(
 // DICOM study management
 pub async fn get_dicom_studies(
     State(app): State<App>,
+    Extension(user_id): Extension<Uuid>,
     Path(patient_id): Path<Uuid>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("GET", format!("/dicom/patients/{}/studies", patient_id));
+
+    // Authorization: verify user_id matches patient_id
+    if user_id != patient_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
     
     let studies = app.document_service.get_dicom_studies_for_patient(patient_id).await
         .map_err(|e| {

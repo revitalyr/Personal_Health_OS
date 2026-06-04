@@ -4,38 +4,18 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
 use crate::app::App;
-
-pub fn cors_layer() -> CorsLayer {
-    CorsLayer::new()
-        .allow_origin([
-            "http://localhost:3000".parse(),
-            "http://localhost:3001".parse(),
-        ])
-        .allow_methods([
-            axum::http::Method::GET,
-            axum::http::Method::POST,
-            axum::http::Method::PUT,
-            axum::http::Method::DELETE,
-        ])
-        .allow_headers([
-            header::AUTHORIZATION,
-            header::ACCEPT,
-            header::CONTENT_TYPE,
-        ])
-}
 
 pub async fn auth_middleware(
     State(app): State<App>,
     mut request: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    // Skip auth for health check and login/register endpoints
+    // Skip auth for health check
     let path = request.uri().path();
-    if path == "/health" || path.starts_with("/auth/") || path.starts_with("/doctor-view/") {
+    if path == "/health" {
         return Ok(next.run(request).await);
     }
 

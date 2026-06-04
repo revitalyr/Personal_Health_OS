@@ -8,7 +8,12 @@ license.workspace = true
 [dependencies]
 jsonwebtoken = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+reqwest = { workspace = true }
+sqlx = { workspace = true }
+bcrypt = { workspace = true }
+

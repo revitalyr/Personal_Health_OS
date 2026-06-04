@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, Query, State, Extension},
     http::StatusCode,
     response::Json,
 };
@@ -22,10 +22,16 @@ pub struct TimelineQuery {
 
 pub async fn get_timeline(
     State(app): State<App>,
+    Extension(user_id): Extension<Uuid>,
     Path(patient_id): Path<Uuid>,
     Query(params): Query<TimelineQuery>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("GET", format!("/patients/{}/timeline", patient_id));
+
+    // Authorization: verify user_id matches patient_id
+    if user_id != patient_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
     
     // Parse event types filter
     let event_types = params.event_types
@@ -88,9 +94,15 @@ pub async fn get_timeline(
 
 pub async fn get_summary(
     State(app): State<App>,
+    Extension(user_id): Extension<Uuid>,
     Path(patient_id): Path<Uuid>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("GET", format!("/patients/{}/timeline/summary", patient_id));
+
+    // Authorization: verify user_id matches patient_id
+    if user_id != patient_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
     
     // Get all events for the patient
     let events = app.event_store.get_events_by_patient(patient_id)
@@ -145,10 +157,16 @@ pub async fn get_summary(
 
 pub async fn export_timeline(
     State(app): State<App>,
+    Extension(user_id): Extension<Uuid>,
     Path(patient_id): Path<Uuid>,
     Query(params): Query<TimelineQuery>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("GET", format!("/patients/{}/timeline/export", patient_id));
+
+    // Authorization: verify user_id matches patient_id
+    if user_id != patient_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
     
     // Parse export format
     let format_str = params.event_types.as_ref().and_then(|types| types.split(',').next());
@@ -191,9 +209,15 @@ pub async fn export_timeline(
 
 pub async fn get_anomalies(
     State(app): State<App>,
+    Extension(user_id): Extension<Uuid>,
     Path(patient_id): Path<Uuid>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("GET", format!("/patients/{}/anomalies", patient_id));
+
+    // Authorization: verify user_id matches patient_id
+    if user_id != patient_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
     
     // Get all events for the patient
     let events = app.event_store.get_events_by_patient(patient_id)

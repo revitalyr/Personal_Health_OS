@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, State, Extension},
     http::StatusCode,
     response::Json,
 };
@@ -10,20 +10,26 @@ use crate::{app::App, trace_request, trace_response};
 
 pub async fn create_event(
     State(app): State<App>,
+    Extension(user_id): Extension<Uuid>,
     Path(patient_id): Path<Uuid>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("POST", format!("/patients/{}/events", patient_id));
-    
+
+    // Authorization: verify user_id matches patient_id
+    if user_id != patient_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     // TODO: Validate event structure and convert to MedicalEvent
     // For now, create a mock event
-    
+
     let event_id = Uuid::new_v4();
-    
+
     // TODO: Store event in database
     // let event = MedicalEvent::new(...);
     // app.event_store.store_event(&event).await?;
-    
+
     // TODO: Publish event to NATS
     // app.nats_client.publish_event(&event).await?;
 
@@ -43,10 +49,16 @@ pub async fn create_event(
 
 pub async fn get_event(
     State(app): State<App>,
+    Extension(user_id): Extension<Uuid>,
     Path((patient_id, event_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("GET", format!("/patients/{}/events/{}", patient_id, event_id));
-    
+
+    // Authorization: verify user_id matches patient_id
+    if user_id != patient_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     // Get event from storage
     let event = app.event_store.get_event_by_id(event_id)
         .await
@@ -78,10 +90,16 @@ pub async fn get_event(
 
 pub async fn list_events(
     State(app): State<App>,
+    Extension(user_id): Extension<Uuid>,
     Path(patient_id): Path<Uuid>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("GET", format!("/patients/{}/events", patient_id));
-    
+
+    // Authorization: verify user_id matches patient_id
+    if user_id != patient_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     // Get events from storage
     let events = app.event_store.get_events_by_patient(patient_id)
         .await

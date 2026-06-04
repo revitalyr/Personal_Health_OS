@@ -23,9 +23,15 @@ pub async fn health() -> Json<Value> {
 
 pub async fn generate_access(
     State(app): State<App>,
+    Extension(user_id): Extension<Uuid>,
     Path(patient_id): Path<Uuid>,
 ) -> Result<Json<Value>, StatusCode> {
     tracing::info!("Generating doctor access for patient: {}", patient_id);
+
+    // Authorization: verify user_id matches patient_id
+    if user_id != patient_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
     
     // Generate doctor access token (15 minutes validity)
     let token = app.auth_service.generate_doctor_access_token(patient_id, 15)
@@ -49,7 +55,7 @@ pub async fn view_report(
     State(app): State<App>,
     Path(token): Path<String>,
 ) -> Result<Json<Value>, StatusCode> {
-    tracing::info!("Viewing doctor report with token: {}", token);
+    tracing::info!("Viewing doctor report");
     
     // Validate doctor access token
     let patient_id = app.auth_service.validate_doctor_access_token(&token)

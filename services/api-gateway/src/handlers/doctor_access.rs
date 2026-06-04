@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, State, Extension},
     http::StatusCode,
     response::Json,
 };
@@ -10,17 +10,23 @@ use crate::{app::App, trace_request, trace_response};
 
 pub async fn generate_access(
     State(app): State<App>,
+    Extension(user_id): Extension<Uuid>,
     Path(patient_id): Path<Uuid>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("POST", format!("/doctor-access/{}", patient_id));
-    
+
+    // Authorization: verify user_id matches patient_id
+    if user_id != patient_id {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     // Generate doctor access token (15 minutes validity)
     let token = app.auth_service.generate_doctor_access_token(patient_id, 15)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     // Generate QR code for the token
     let qr_code_data = format!("https://healthos.app/doctor-view/{}", token);
-    
+
     // TODO: Generate actual QR code image
     let response = serde_json::json!({
         "patient_id": patient_id,

@@ -2,7 +2,7 @@ use crate::models::*;
 use crate::error::AuthError;
 use sqlx::PgPool;
 use bcrypt::{hash, verify, DEFAULT_COST};
-use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey};
+use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey, Algorithm};
 use uuid::Uuid;
 use chrono::{DateTime, Utc, Duration};
 use rand::Rng;
@@ -101,22 +101,24 @@ impl AuthService {
     }
 
     pub async fn login_google(&self, id_token: &str) -> Result<AuthToken, AuthError> {
-        // Verify Google token
-        let client = reqwest::Client::new();
-        let response = client
-            .get("https://www.googleapis.com/oauth2/v2/userinfo")
-            .header("Authorization", format!("Bearer {}", id_token))
-            .send()
-            .await?;
+        // Verify Google ID token signature and claims using JWKS
+        let google_id = self.verify_google_id_token(id_token).await?;
 
-        if !response.status().is_success() {
-            return Err(AuthError::InvalidOAuthToken);
-        }
+        // Decode token to extract claims (email, name)
+        let token_data = jsonwebtoken::decode::<serde_json::Value>(
+            id_token,
+            &DecodingKey::from_secret(b""), // Signature already verified
+            &Validation::new(Algorithm::RS256),
+        )
+        .map_err(|_| AuthError::InvalidOAuthToken)?;
 
-        let user_info: serde_json::Value = response.json().await?;
-        let google_id = user_info.get("id").unwrap().as_str().unwrap();
-        let email = user_info.get("email").unwrap().as_str().unwrap();
-        let name = user_info.get("name").unwrap().as_str().unwrap();
+        let claims = token_data.claims;
+        let email = claims.get("email")
+            .and_then(|v| v.as_str())
+            .ok_or(AuthError::InvalidOAuthToken)?;
+        let name = claims.get("name")
+            .and_then(|v| v.as_str())
+            .ok_or(AuthError::InvalidOAuthToken)?;
 
         // Find or create account
         let account = sqlx::query!(
@@ -199,7 +201,7 @@ impl AuthService {
         .await?;
 
         // Send SMS (implement with SMS service)
-        tracing::info!("OTP code for {}: {}", phone, code);
+        tracing::info!("OTP code sent to {}", phone);
 
         Ok(())
     }
@@ -310,14 +312,18 @@ impl AuthService {
             "sub": account_id.to_string(),
             "exp": expires_at.timestamp(),
             "iat": now.timestamp(),
-            "type": "access"
+            "type": "access",
+            "iss": "health_os",
+            "aud": "health_os_api"
         });
 
         let refresh_claims = json!({
             "sub": account_id.to_string(),
             "exp": (now + Duration::days(30)).timestamp(),
             "iat": now.timestamp(),
-            "type": "refresh"
+            "type": "refresh",
+            "iss": "health_os",
+            "aud": "health_os_api"
         });
 
         let access_token = encode(
@@ -341,13 +347,84 @@ impl AuthService {
     }
 
     pub async fn verify_token(&self, token: &str) -> Result<Uuid, AuthError> {
+        let mut validation = Validation::new(Algorithm::HS256);
+        validation.set_issuer(&["health_os"]);
+        validation.set_audience(&["health_os_api"]);
+
         let token_data = decode::<serde_json::Value>(
             token,
             &DecodingKey::from_secret(self.jwt_secret.as_ref()),
-            &Validation::default(),
+            &validation,
         )?;
 
         let sub = token_data.claims.get("sub").unwrap().as_str().unwrap();
         Ok(Uuid::parse_str(sub)?)
+    }
+
+    async fn verify_google_id_token(&self, id_token: &str) -> Result<String, AuthError> {
+        // Fetch Google's public keys from JWKS endpoint
+        let client = reqwest::Client::new();
+        let jwks_response = client
+            .get("https://www.googleapis.com/oauth2/v3/certs")
+            .send()
+            .await
+            .map_err(|_| AuthError::InvalidOAuthToken)?;
+
+        if !jwks_response.status().is_success() {
+            return Err(AuthError::InvalidOAuthToken);
+        }
+
+        let jwks: serde_json::Value = jwks_response
+            .json()
+            .await
+            .map_err(|_| AuthError::InvalidOAuthToken)?;
+
+        // Extract the header from the token to get the key ID
+        let header = jsonwebtoken::decode_header(id_token)
+            .map_err(|_| AuthError::InvalidOAuthToken)?;
+
+        let kid = header.kid.ok_or(AuthError::InvalidOAuthToken)?;
+
+        // Find the matching key in JWKS
+        let keys = jwks.get("keys")
+            .and_then(|v| v.as_array())
+            .ok_or(AuthError::InvalidOAuthToken)?;
+
+        let matching_key = keys
+            .iter()
+            .find(|k| k.get("kid").and_then(|v| v.as_str()) == Some(kid.as_str()))
+            .ok_or(AuthError::InvalidOAuthToken)?;
+
+        // Extract the modulus and exponent to build the decoding key
+        let n = matching_key.get("n")
+            .and_then(|v| v.as_str())
+            .ok_or(AuthError::InvalidOAuthToken)?;
+        let e = matching_key.get("e")
+            .and_then(|v| v.as_str())
+            .ok_or(AuthError::InvalidOAuthToken)?;
+
+        let decoding_key = DecodingKey::from_rsa_components(n, e)
+            .map_err(|_| AuthError::InvalidOAuthToken)?;
+
+        // Decode and verify the token
+        let mut validation = Validation::new(Algorithm::RS256);
+        validation.set_audience(&[&self.google_client_id]);
+        validation.set_issuer(&["https://accounts.google.com"]);
+
+        let token_data = jsonwebtoken::decode::<serde_json::Value>(
+            id_token,
+            &decoding_key,
+            &validation,
+        )
+        .map_err(|_| AuthError::InvalidOAuthToken)?;
+
+        // Extract the subject (google_id)
+        let google_id = token_data.claims
+            .get("sub")
+            .and_then(|v| v.as_str())
+            .ok_or(AuthError::InvalidOAuthToken)?
+            .to_string();
+
+        Ok(google_id)
     }
 }
