@@ -7,14 +7,12 @@ use axum::{
 };
 use serde_json::{json, Value};
 use tower::ServiceBuilder;
-use tower_http::{
-    cors::{Any, CorsLayer},
-    trace::TraceLayer,
-};
+use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
 use crate::auth::{AuthService, LoginRequest, RegisterRequest, CreateProfileRequest};
 use crate::error::AppError;
+use crate::middleware::cors_layer;
 
 pub fn auth_routes() -> Router<crate::AppState> {
     Router::new()
@@ -30,7 +28,7 @@ pub fn auth_routes() -> Router<crate::AppState> {
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
-                .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any)),
+                .layer(cors_layer()),
         )
 }
 

@@ -3,10 +3,12 @@ pub mod service;
 pub mod error;
 
 pub use models::*;
-pub use service::*;
 pub use error::*;
+// Note: service::AuthService is the full implementation with DB support
+// Re-export specific items from service as needed
+pub use service::{AuthService as FullAuthService, AuthToken, RegisterRequest, LoginRequest, OTPRequest};
 
-// Legacy compatibility
+// Legacy compatibility - keep simple types for external use
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
@@ -61,130 +63,6 @@ pub enum AuthError {
 }
 
 pub type Result<T> = std::result::Result<T, AuthError>;
-
-pub struct AuthService {
-    jwt_secret: String,
-    issuer: String,
-    audience: String,
-}
-
-impl AuthService {
-    pub fn new(jwt_secret: String, issuer: String, audience: String) -> Self {
-        Self {
-            jwt_secret,
-            issuer,
-            audience,
-        }
-    }
-
-    pub fn generate_token(&self, user: &User) -> Result<String> {
-        let now = Utc::now();
-        let exp = now + Duration::hours(24); // Token expires in 24 hours
-
-        let claims = Claims {
-            sub: user.id.to_string(),
-            email: user.email.clone(),
-            exp: exp.timestamp(),
-            iat: now.timestamp(),
-            iss: self.issuer.clone(),
-            aud: self.audience.clone(),
-        };
-
-        let token = encode(
-            &Header::default(),
-            &claims,
-            &EncodingKey::from_secret(self.jwt_secret.as_ref()),
-        )?;
-
-        tracing::info!("Generated JWT token for user: {}", user.id);
-        Ok(token)
-    }
-
-    pub fn validate_token(&self, token: &str) -> Result<Claims> {
-        let validation = Validation::new(jsonwebtoken::Algorithm::HS256)
-            .with_issuer(&self.issuer)
-            .with_audience(&self.audience);
-
-        let token_data = decode::<Claims>(
-            token,
-            &DecodingKey::from_secret(self.jwt_secret.as_ref()),
-            &validation,
-        )?;
-
-        let claims = token_data.claims;
-
-        // Check if token is expired
-        if claims.exp < Utc::now().timestamp() {
-            return Err(AuthError::TokenExpired);
-        }
-
-        tracing::debug!("Validated JWT token for user: {}", claims.sub);
-        Ok(claims)
-    }
-
-    pub fn extract_user_id(&self, token: &str) -> Result<Uuid> {
-        let claims = self.validate_token(token)?;
-        let user_id = Uuid::parse_str(&claims.sub)
-            .map_err(|_| AuthError::InvalidClaims)?;
-        Ok(user_id)
-    }
-
-    pub fn generate_doctor_access_token(&self, patient_id: Uuid, duration_minutes: i64) -> Result<String> {
-        let now = Utc::now();
-        let exp = now + Duration::minutes(duration_minutes);
-
-        let claims = Claims {
-            sub: format!("doctor_access:{}", patient_id),
-            email: "doctor@healthos.app".to_string(),
-            exp: exp.timestamp(),
-            iat: now.timestamp(),
-            iss: self.issuer.clone(),
-            aud: "doctor_viewer".to_string(),
-        };
-
-        let token = encode(
-            &Header::default(),
-            &claims,
-            &EncodingKey::from_secret(self.jwt_secret.as_ref()),
-        )?;
-
-        tracing::info!(
-            "Generated doctor access token for patient: {}, expires in {} minutes",
-            patient_id,
-            duration_minutes
-        );
-        Ok(token)
-    }
-
-    pub fn validate_doctor_access_token(&self, token: &str) -> Result<Uuid> {
-        let validation = Validation::new(jsonwebtoken::Algorithm::HS256)
-            .with_issuer(&self.issuer)
-            .with_audience(&["doctor_viewer"]);
-
-        let token_data = decode::<Claims>(
-            token,
-            &DecodingKey::from_secret(self.jwt_secret.as_ref()),
-            &validation,
-        )?;
-
-        let claims = token_data.claims;
-
-        // Check if token is expired
-        if claims.exp < Utc::now().timestamp() {
-            return Err(AuthError::TokenExpired);
-        }
-
-        // Extract patient ID from subject
-        let patient_id_str = claims.sub.strip_prefix("doctor_access:")
-            .ok_or(AuthError::InvalidClaims)?;
-        
-        let patient_id = Uuid::parse_str(patient_id_str)
-            .map_err(|_| AuthError::InvalidClaims)?;
-
-        tracing::debug!("Validated doctor access token for patient: {}", patient_id);
-        Ok(patient_id)
-    }
-}
 
 #[cfg(test)]
 mod tests {

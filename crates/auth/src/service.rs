@@ -209,8 +209,8 @@ impl AuthService {
     pub async fn verify_otp(&self, phone: &str, code: &str) -> Result<AuthToken, AuthError> {
         let session = sqlx::query!(
             r#"
-            SELECT id, expires_at, attempts FROM otp_sessions 
-            WHERE phone_number = $1 AND code = $2 
+            SELECT id, expires_at FROM otp_sessions
+            WHERE phone_number = $1 AND code = $2
             ORDER BY created_at DESC LIMIT 1
             "#,
             phone,
@@ -224,17 +224,17 @@ impl AuthService {
             return Err(AuthError::OTPExpired);
         }
 
-        if session.attempts >= 3 {
-            return Err(AuthError::OTPAttemptsExceeded);
-        }
-
-        // Update attempts
-        sqlx::query!(
-            "UPDATE otp_sessions SET attempts = attempts + 1 WHERE id = $1",
+        // Atomically increment attempts and check limit in one operation
+        let result = sqlx::query!(
+            "UPDATE otp_sessions SET attempts = attempts + 1 WHERE id = $1 AND attempts < 3 RETURNING attempts",
             session.id
         )
-        .execute(&self.db)
+        .fetch_optional(&self.db)
         .await?;
+
+        if result.is_none() {
+            return Err(AuthError::OTPAttemptsExceeded);
+        }
 
         // Find or create account
         let account = sqlx::query!(

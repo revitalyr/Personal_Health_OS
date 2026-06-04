@@ -61,7 +61,7 @@ impl DatabaseConfig {
 
 #[derive(Debug, Clone)]
 pub struct EventStore {
-    pool: PgPool,
+    pub pool: PgPool,
 }
 
 impl EventStore {

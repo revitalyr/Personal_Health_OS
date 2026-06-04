@@ -8,10 +8,7 @@ use axum::{
 use serde_json::json;
 use std::net::SocketAddr;
 use tower::ServiceBuilder;
-use tower_http::{
-    cors::{Any, CorsLayer},
-    trace::TraceLayer,
-};
+use tower_http::trace::TraceLayer;
 use tracing::{info, error};
 
 use patient_management::patient_routes;
