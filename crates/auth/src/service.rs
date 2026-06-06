@@ -116,17 +116,13 @@ impl AuthService {
 
     pub async fn login_google(&self, id_token: &str) -> Result<AuthToken, AuthError> {
         // Verify Google ID token signature and claims using JWKS
-        let google_id = self.verify_google_id_token(id_token).await?;
-
-        // Decode token to extract claims (email, name)
-        let token_data = jsonwebtoken::decode::<serde_json::Value>(
-            id_token,
-            &DecodingKey::from_secret(b""), // Signature already verified
-            &Validation::new(Algorithm::RS256),
-        )
-        .map_err(|_| AuthError::InvalidOAuthToken)?;
+        let token_data = self.verify_google_id_token(id_token).await?;
 
         let claims = token_data.claims;
+        let google_id = claims.get("sub")
+            .and_then(|v| v.as_str())
+            .ok_or(AuthError::InvalidOAuthToken)?
+            .to_string();
         let email = claims.get("email")
             .and_then(|v| v.as_str())
             .ok_or(AuthError::InvalidOAuthToken)?;
@@ -405,7 +401,7 @@ impl AuthService {
     }
 
     /// Verify Google OAuth ID token using JWKS
-    async fn verify_google_id_token(&self, id_token: &str) -> Result<String, AuthError> {
+    async fn verify_google_id_token(&self, id_token: &str) -> Result<jsonwebtoken::TokenData<serde_json::Value>, AuthError> {
         // Fetch Google's public keys from JWKS endpoint
         let jwks_response = self.http_client
             .get("https://www.googleapis.com/oauth2/v3/certs")
@@ -461,13 +457,6 @@ impl AuthService {
         )
         .map_err(|_| AuthError::InvalidOAuthToken)?;
 
-        // Extract the subject (google_id)
-        let google_id = token_data.claims
-            .get("sub")
-            .and_then(|v| v.as_str())
-            .ok_or(AuthError::InvalidOAuthToken)?
-            .to_string();
-
-        Ok(google_id)
+        Ok(token_data)
     }
 }
