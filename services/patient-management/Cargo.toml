@@ -16,6 +16,7 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = "0.3"
+jsonwebtoken = { workspace = true }
 config = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
