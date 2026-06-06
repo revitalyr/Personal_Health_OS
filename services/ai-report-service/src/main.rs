@@ -24,7 +24,7 @@ use config::Config;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Initialize telemetry
-    telemetry::init_telemetry("ai-report-service")?;
+    telemetry::init_telemetry("ai-report-service").map_err(|e| anyhow::anyhow!("{:?}", e))?;
 
     // Load configuration
     let config = Config::from_env()?;

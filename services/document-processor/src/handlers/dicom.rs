@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use crate::app::App;
+use telemetry::{trace_request, trace_response};
 
 #[derive(Debug, Deserialize)]
 pub struct DicomQuery {
@@ -86,8 +87,8 @@ pub async fn upload_dicom(
         if let Err(e) = app.document_service.create_dicom_document_record(
             document_id,
             patient_id,
-            filename,
-            storage_path,
+            filename.clone(),
+            storage_path.clone(),
             dicom_metadata.clone(),
         ).await {
             tracing::error!("Failed to create DICOM document record: {}", e);
@@ -237,7 +238,7 @@ pub async fn get_dicom_series(
 }
 
 // DICOM annotation
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct DicomAnnotation {
     pub x: f32,
     pub y: f32,
@@ -256,7 +257,12 @@ pub async fn add_dicom_annotation(
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("POST", format!("/dicom/{}/annotations", document_id));
     
-    let annotation_id = app.document_service.add_dicom_annotation(document_id, annotation).await
+    let annotation_value = serde_json::to_value(annotation)
+        .map_err(|e| {
+            tracing::error!("Failed to serialize annotation: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    let annotation_id = app.document_service.add_dicom_annotation(document_id, annotation_value).await
         .map_err(|e| {
             tracing::error!("Failed to add DICOM annotation: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR

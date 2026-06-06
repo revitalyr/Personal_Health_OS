@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query},
     http::StatusCode,
     response::Json,
     routing::{get, post},
@@ -7,7 +7,6 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
 use std::net::SocketAddr;
 use uuid::Uuid;
 use chrono::Utc;
@@ -129,7 +128,7 @@ async fn list_documents(
     let limit = params.limit.unwrap_or(documents.len());
 
     Json(serde_json::json!({
-        "documents": documents.into_iter().take(limit).collect::<Vec<_>>(),
+        "documents": documents.clone().into_iter().take(limit).collect::<Vec<_>>(),
         "total": documents.len(),
         "limit": limit
     }))

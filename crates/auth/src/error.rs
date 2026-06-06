@@ -35,6 +35,9 @@ pub enum AuthError {
     #[error("HTTP client error: {0}")]
     HTTP(#[from] reqwest::Error),
     
+    #[error("Task join error: {0}")]
+    TaskJoin(#[from] tokio::task::JoinError),
+    
     #[error("Invalid phone number")]
     InvalidPhoneNumber,
     

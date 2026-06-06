@@ -16,4 +16,6 @@ tracing = { workspace = true }
 reqwest = { workspace = true }
 sqlx = { workspace = true }
 bcrypt = { workspace = true }
+tokio = { workspace = true }
+rand = "0.8"
 

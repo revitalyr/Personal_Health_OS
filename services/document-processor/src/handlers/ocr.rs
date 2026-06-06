@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use crate::app::App;
+use telemetry::{trace_request, trace_response};
 
 #[derive(Debug, Deserialize)]
 pub struct OcrProcessRequest {
@@ -55,7 +56,7 @@ pub struct PageResult {
     pub bounding_boxes: Vec<BoundingBox>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BoundingBox {
     pub x: f32,
     pub y: f32,
@@ -188,7 +189,7 @@ pub async fn get_ocr_result(
                     "total_pages": ocr_result.pages.len(),
                     "total_entities": ocr_result.extracted_entities.as_ref().map_or(0, |e| e.len()),
                     "average_confidence": ocr_result.pages.iter()
-                        .map(|p| p.confidence)
+                        .map(|p| p.get("confidence").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32)
                         .sum::<f32>() / ocr_result.pages.len() as f32
                 }
             });
@@ -223,9 +224,11 @@ pub async fn process_batch_ocr(
         return Err(StatusCode::BAD_REQUEST);
     }
     
+    let document_ids = request.document_ids.clone();
+    
     // Start batch processing
     let batch_job_id = app.document_service.start_batch_ocr_processing(
-        request.document_ids,
+        document_ids.clone(),
         request.languages,
         request.extract_entities.unwrap_or(true),
         request.priority.unwrap_or("normal".to_string()),
@@ -237,7 +240,7 @@ pub async fn process_batch_ocr(
     
     let response = serde_json::json!({
         "batch_job_id": batch_job_id,
-        "total_documents": request.document_ids.len(),
+        "total_documents": document_ids.len(),
         "status": "batch_processing_started",
         "started_at": chrono::Utc::now()
     });
@@ -288,7 +291,7 @@ pub struct OcrCorrectionRequest {
     pub corrections: Vec<TextCorrection>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct TextCorrection {
     pub original_text: String,
     pub corrected_text: String,
@@ -303,9 +306,19 @@ pub async fn apply_ocr_corrections(
     trace_request!("POST", format!("/ocr/{}/correct", request.job_id));
     
     // Apply corrections to OCR result
+    let corrections_count = request.corrections.len();
+    let corrections_value: Result<Vec<Value>, StatusCode> = request.corrections.into_iter()
+        .map(|c| serde_json::to_value(c).map_err(|e| {
+            tracing::error!("Failed to serialize correction: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        }))
+        .collect();
+    
+    let corrections_value = corrections_value?;
+    
     let corrected_result = app.document_service.apply_ocr_corrections(
         request.job_id,
-        request.corrections,
+        corrections_value,
     ).await
         .map_err(|e| {
             tracing::error!("Failed to apply OCR corrections: {}", e);
@@ -314,7 +327,7 @@ pub async fn apply_ocr_corrections(
     
     let response = serde_json::json!({
         "job_id": request.job_id,
-        "corrections_applied": request.corrections.len(),
+        "corrections_applied": corrections_count,
         "corrected_result": corrected_result,
         "corrected_at": chrono::Utc::now()
     });
@@ -324,7 +337,7 @@ pub async fn apply_ocr_corrections(
 }
 
 // OCR template management
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct OcrTemplate {
     pub name: String,
     pub document_type: String,
@@ -332,7 +345,7 @@ pub struct OcrTemplate {
     pub extraction_rules: Vec<ExtractionRule>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FieldMapping {
     pub field_name: String,
     pub pattern: String,
@@ -341,7 +354,7 @@ pub struct FieldMapping {
     pub default_value: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ExtractionRule {
     pub rule_name: String,
     pub pattern: String,
@@ -355,7 +368,12 @@ pub async fn create_ocr_template(
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("POST", "/ocr/templates");
     
-    let template_id = app.document_service.create_ocr_template(template).await
+    let template_value = serde_json::to_value(template)
+        .map_err(|e| {
+            tracing::error!("Failed to serialize OCR template: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    let template_id = app.document_service.create_ocr_template(template_value).await
         .map_err(|e| {
             tracing::error!("Failed to create OCR template: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR

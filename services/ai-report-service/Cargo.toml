@@ -24,3 +24,5 @@ async-nats = { workspace = true }
 event-model = { path = "../../crates/event-model" }
 storage = { path = "../../crates/storage" }
 telemetry = { path = "../../crates/telemetry" }
+auth = { path = "../../crates/auth" }
+sqlx = { workspace = true, features = ["runtime-tokio-rustls", "postgres"] }

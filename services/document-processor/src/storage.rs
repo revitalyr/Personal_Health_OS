@@ -41,7 +41,7 @@ impl DocumentStorage {
             StorageType::Local => {
                 let full_path = self.get_full_path(&storage_path)?;
                 fs::write(&full_path, data).await?;
-                info!("Stored file locally: {}", full_path);
+                info!("Stored file locally: {}", full_path.display());
             }
             StorageType::S3 => {
                 // TODO: Upload to S3
@@ -63,7 +63,7 @@ impl DocumentStorage {
             StorageType::Local => {
                 let full_path = self.get_full_path(storage_path)?;
                 let data = fs::read(&full_path).await?;
-                info!("Retrieved file locally: {}", full_path);
+                info!("Retrieved file locally: {}", full_path.display());
                 Ok(data)
             }
             StorageType::S3 => {
@@ -84,7 +84,7 @@ impl DocumentStorage {
             StorageType::Local => {
                 let full_path = self.get_full_path(storage_path)?;
                 fs::remove_file(&full_path).await?;
-                info!("Deleted file locally: {}", full_path);
+                info!("Deleted file locally: {}", full_path.display());
             }
             StorageType::S3 => {
                 // TODO: Delete from S3

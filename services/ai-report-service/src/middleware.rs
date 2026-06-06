@@ -35,7 +35,8 @@ pub async fn auth_middleware(
     let token = auth_header.ok_or(StatusCode::UNAUTHORIZED)?;
 
     // Validate token and extract user_id
-    let user_id = app.auth_service.extract_user_id(token)
+    let user_id = app.auth_service.verify_token(token)
+        .await
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     // Add user_id to request extensions for authorization checks

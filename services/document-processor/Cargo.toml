@@ -19,10 +19,12 @@ config = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 async-nats = { workspace = true }
+futures-util = "0.3"
+regex = { workspace = true }
 
 # Document processing (simplified for demo)
 # tesseract = "0.13"
-# image = "0.24"
+image = "0.24"
 # pdf = "0.8"
 # dicom-rs = "0.6"  # Temporarily commented out
 
@@ -32,7 +34,7 @@ mime_guess = "2.0"
 tempfile = "3.8"
 
 # Storage & Database
-sqlx = { workspace = true }
+sqlx = { workspace = true, features = ["runtime-tokio-rustls", "postgres"] }
 # aws-sdk-s3 = "1.0"
 # aws-config = "1.0"  # Temporarily commented out
 
@@ -40,3 +42,4 @@ sqlx = { workspace = true }
 event-model = { path = "../../crates/event-model" }
 storage = { path = "../../crates/storage" }
 telemetry = { path = "../../crates/telemetry" }
+auth = { path = "../../crates/auth" }

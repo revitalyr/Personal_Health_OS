@@ -27,7 +27,7 @@ use config::Config;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Initialize telemetry
-    telemetry::init_telemetry("document-processor")?;
+    telemetry::init_telemetry("document-processor").map_err(|e| anyhow::anyhow!("{:?}", e))?;
 
     // Load configuration
     let config = Config::from_env()?;

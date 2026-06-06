@@ -1,7 +1,9 @@
 use async_nats::Client;
+use futures_util::stream::StreamExt;
 use serde_json;
 use thiserror::Error;
 use tracing::{info, warn, error};
+use event_model::MedicalEvent;
 
 #[derive(Debug, Error)]
 pub enum NatsError {
@@ -189,7 +191,7 @@ impl NatsClient {
 
     pub async fn subscribe_to_ocr_events<F>(&self, callback: F) -> Result<(), NatsError>
     where
-        F: fn(OcrEvent) + Send + Sync + 'static,
+        F: Fn(OcrEvent) + Send + Sync + 'static,
     {
         let subject = "ocr.*";
         let mut subscriber = self.client
@@ -246,6 +248,19 @@ impl NatsClient {
             }
         });
 
+        Ok(())
+    }
+
+    pub async fn publish_event(&self, event: &MedicalEvent) -> Result<(), NatsError> {
+        let subject = format!("events.{:?}", event.event_type);
+        let payload_bytes = serde_json::to_vec(event)?;
+        
+        self.client
+            .publish(subject, payload_bytes.into())
+            .await
+            .map_err(|e| NatsError::Publish(e.to_string()))?;
+
+        info!("Published event: {} for patient: {}", event.id, event.patient_id);
         Ok(())
     }
 }

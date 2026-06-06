@@ -385,15 +385,15 @@ mod allergy_tests {
         
         let mild = PatientAllergy::new(patient_id, "Dust", AllergySeverity::Mild).unwrap();
         let mild_actions = mild.get_emergency_actions();
-        assert!(mild_actions.contains(&"Monitor for symptoms"));
+        assert!(mild_actions.iter().any(|s| s == "Monitor for symptoms"));
         
         let severe = PatientAllergy::new(patient_id, "Bee stings", AllergySeverity::Severe).unwrap();
         let severe_actions = severe.get_emergency_actions();
-        assert!(severe_actions.contains(&"Call emergency services"));
+        assert!(severe_actions.iter().any(|s| s == "Call emergency services"));
         
         let life_threatening = PatientAllergy::new(patient_id, "Peanuts", AllergySeverity::LifeThreatening).unwrap();
         let lt_actions = life_threatening.get_emergency_actions();
-        assert!(lt_actions.contains(&"EMERGENCY: Call 911 immediately"));
+        assert!(lt_actions.iter().any(|s| s == "EMERGENCY: Call 911 immediately"));
     }
 }
 
@@ -711,13 +711,13 @@ mod integration_tests {
     #[test]
     fn test_error_handling_consistency() {
         // Test that all semantic types provide consistent error handling
-        let test_cases = vec![
-            || ContactName::new(""),
-            || PhoneNumber::new("123"),
-            || SystolicPressure::new(300),
-            || BodyTemperature::new(50.0),
-            || WeightKg::new(1000.0),
-            || Diagnosis::new(&"A".repeat(1500)),
+        let test_cases: Vec<Box<dyn Fn() -> Result<(), &'static str>>> = vec![
+            Box::new(|| ContactName::new("").map(|_| ())),
+            Box::new(|| PhoneNumber::new("123").map(|_| ())),
+            Box::new(|| SystolicPressure::new(300).map(|_| ())),
+            Box::new(|| BodyTemperature::new(50.0).map(|_| ())),
+            Box::new(|| WeightKg::new(1000.0).map(|_| ())),
+            Box::new(|| Diagnosis::new(&"A".repeat(1500)).map(|_| ())),
         ];
         
         for test_case in test_cases {

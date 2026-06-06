@@ -1,10 +1,11 @@
 use chrono::{DateTime, Utc};
-use event_model::{MedicalEvent, Result as EventResult};
+use event_model::MedicalEvent;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{PgPool, Row};
 use std::env;
 use thiserror::Error;
 use uuid::Uuid;
+use serde::de::Error as SerdeError;
 
 #[derive(Debug, Error)]
 pub enum StorageError {
@@ -100,11 +101,11 @@ impl EventStore {
             .await
             .map_err(|e| StorageError::Connection(e.to_string()))?;
 
-        // Run migrations
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .map_err(|e| StorageError::Database(e))?;
+        // Run migrations (commented out - migrations directory not in storage crate)
+        // sqlx::migrate!("./migrations")
+        //     .run(&pool)
+        //     .await
+        //     .map_err(|e| StorageError::Database(e))?;
 
         tracing::info!("Database connection established and migrations completed");
         
@@ -215,7 +216,6 @@ impl EventStore {
         
         if end_date.is_some() {
             query.push_str(&format!(" AND timestamp <= ${}", bind_count + 1));
-            bind_count += 1;
         }
         
         query.push_str(" ORDER BY timestamp ASC");

@@ -1,10 +1,10 @@
 use crate::models::*;
 use crate::error::AuthError;
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey, Algorithm};
 use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
+use chrono::{Utc, Duration};
 use rand::Rng;
 use serde_json::json;
 
@@ -40,12 +40,10 @@ impl AuthService {
     /// Register a new user with email and password
     pub async fn register_email(&self, request: RegisterRequest) -> Result<AuthToken, AuthError> {
         // Check if email already exists
-        let existing = sqlx::query!(
-            "SELECT id FROM accounts WHERE email = $1",
-            request.email
-        )
-        .fetch_optional(&self.db)
-        .await?;
+        let existing = sqlx::query("SELECT id FROM accounts WHERE email = $1")
+            .bind(&request.email)
+            .fetch_optional(&self.db)
+            .await?;
 
         if existing.is_some() {
             return Err(AuthError::EmailAlreadyExists);
@@ -59,35 +57,35 @@ impl AuthService {
 
         // Create account
         let account_id = Uuid::new_v4();
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO accounts (id, email, password_hash, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5)
             "#,
-            account_id,
-            request.email,
-            password_hash,
-            Utc::now(),
-            Utc::now()
         )
+        .bind(account_id)
+        .bind(&request.email)
+        .bind(&password_hash)
+        .bind(Utc::now())
+        .bind(Utc::now())
         .execute(&self.db)
         .await?;
 
         // Create user profile
         let profile_id = Uuid::new_v4();
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO user_profiles (id, account_id, name, relationship, date_of_birth, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             "#,
-            profile_id,
-            account_id,
-            request.name,
-            ProfileRelationship::Self_ as ProfileRelationship,
-            request.date_of_birth,
-            Utc::now(),
-            Utc::now()
         )
+        .bind(profile_id)
+        .bind(account_id)
+        .bind(&request.name)
+        .bind(ProfileRelationship::Self_ as ProfileRelationship)
+        .bind(request.date_of_birth)
+        .bind(Utc::now())
+        .bind(Utc::now())
         .execute(&self.db)
         .await?;
 
@@ -96,25 +94,24 @@ impl AuthService {
 
     /// Login with email and password
     pub async fn login_email(&self, email: &str, password: &str) -> Result<AuthToken, AuthError> {
-        let account = sqlx::query!(
-            "SELECT id, password_hash FROM accounts WHERE email = $1",
-            email
-        )
-        .fetch_optional(&self.db)
-        .await?
-        .ok_or(AuthError::InvalidCredentials)?;
+        let account = sqlx::query("SELECT id, password_hash FROM accounts WHERE email = $1")
+            .bind(email)
+            .fetch_optional(&self.db)
+            .await?
+            .ok_or(AuthError::InvalidCredentials)?;
 
         // Verify password (CPU-intensive, use spawn_blocking to avoid blocking tokio worker)
-        let password_hash = account.password_hash.clone();
+        let password_hash_str: String = account.try_get("password_hash").unwrap();
         let password_to_verify = password.to_string();
         let is_valid = tokio::task::spawn_blocking(move || {
-            verify(&password_to_verify, &password_hash)
+            verify(&password_to_verify, &password_hash_str)
         }).await??;
         if !is_valid {
             return Err(AuthError::InvalidCredentials);
         }
 
-        self.generate_tokens(account.id).await
+        let account_id: Uuid = account.try_get("id").unwrap();
+        self.generate_tokens(account_id).await
     }
 
     pub async fn login_google(&self, id_token: &str) -> Result<AuthToken, AuthError> {
@@ -138,45 +135,46 @@ impl AuthService {
             .ok_or(AuthError::InvalidOAuthToken)?;
 
         // Find or create account
-        let account = sqlx::query!(
-            "SELECT id FROM accounts WHERE google_id = $1",
-            google_id
-        )
-        .fetch_optional(&self.db)
-        .await?;
+        let account = sqlx::query("SELECT id FROM accounts WHERE google_id = $1")
+            .bind(&google_id)
+            .fetch_optional(&self.db)
+            .await?;
 
         let account_id = match account {
-            Some(acc) => acc.id,
+            Some(acc) => {
+                let id: Uuid = acc.try_get("id").unwrap();
+                id
+            },
             None => {
                 let new_id = Uuid::new_v4();
-                sqlx::query!(
+                sqlx::query(
                     r#"
                     INSERT INTO accounts (id, email, google_id, created_at, updated_at)
                     VALUES ($1, $2, $3, $4, $5)
                     "#,
-                    new_id,
-                    email,
-                    google_id,
-                    Utc::now(),
-                    Utc::now()
                 )
+                .bind(new_id)
+                .bind(&email)
+                .bind(&google_id)
+                .bind(Utc::now())
+                .bind(Utc::now())
                 .execute(&self.db)
                 .await?;
 
                 // Create profile
                 let profile_id = Uuid::new_v4();
-                sqlx::query!(
+                sqlx::query(
                     r#"
                     INSERT INTO user_profiles (id, account_id, name, relationship, created_at, updated_at)
                     VALUES ($1, $2, $3, $4, $5, $6)
                     "#,
-                    profile_id,
-                    new_id,
-                    name,
-                    ProfileRelationship::Self_ as ProfileRelationship,
-                    Utc::now(),
-                    Utc::now()
                 )
+                .bind(profile_id)
+                .bind(new_id)
+                .bind(name)
+                .bind(ProfileRelationship::Self_ as ProfileRelationship)
+                .bind(Utc::now())
+                .bind(Utc::now())
                 .execute(&self.db)
                 .await?;
 
@@ -205,18 +203,18 @@ impl AuthService {
         let expires_at = Utc::now() + Duration::minutes(10);
 
         // Store OTP session
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO otp_sessions (id, phone_number, code, expires_at, attempts, created_at)
             VALUES ($1, $2, $3, $4, $5, $6)
             "#,
-            Uuid::new_v4(),
-            phone,
-            code,
-            expires_at,
-            0,
-            Utc::now()
         )
+        .bind(Uuid::new_v4())
+        .bind(phone)
+        .bind(&code)
+        .bind(expires_at)
+        .bind(0)
+        .bind(Utc::now())
         .execute(&self.db)
         .await?;
 
@@ -228,57 +226,59 @@ impl AuthService {
 
     /// Verify OTP code and return auth token
     pub async fn verify_otp(&self, phone: &str, code: &str) -> Result<AuthToken, AuthError> {
-        let session = sqlx::query!(
+        let session = sqlx::query(
             r#"
             SELECT id, expires_at FROM otp_sessions
             WHERE phone_number = $1 AND code = $2
             ORDER BY created_at DESC LIMIT 1
             "#,
-            phone,
-            code
         )
+        .bind(phone)
+        .bind(code)
         .fetch_optional(&self.db)
         .await?
         .ok_or(AuthError::InvalidOTP)?;
 
-        if Utc::now() > session.expires_at {
+        let expires_at: chrono::DateTime<Utc> = session.try_get("expires_at").unwrap();
+        if Utc::now() > expires_at {
             return Err(AuthError::OTPExpired);
         }
 
+        let session_id: Uuid = session.try_get("id").unwrap();
+
         // Atomically increment attempts and check limit in one operation
-        let result = sqlx::query!(
-            "UPDATE otp_sessions SET attempts = attempts + 1 WHERE id = $1 AND attempts < 3 RETURNING attempts",
-            session.id
-        )
-        .fetch_optional(&self.db)
-        .await?;
+        let result = sqlx::query("UPDATE otp_sessions SET attempts = attempts + 1 WHERE id = $1 AND attempts < 3 RETURNING attempts")
+            .bind(session_id)
+            .fetch_optional(&self.db)
+            .await?;
 
         if result.is_none() {
             return Err(AuthError::OTPAttemptsExceeded);
         }
 
         // Find or create account
-        let account = sqlx::query!(
-            "SELECT id FROM accounts WHERE phone = $1",
-            phone
-        )
-        .fetch_optional(&self.db)
-        .await?;
+        let account = sqlx::query("SELECT id FROM accounts WHERE phone = $1")
+            .bind(phone)
+            .fetch_optional(&self.db)
+            .await?;
 
         let account_id = match account {
-            Some(acc) => acc.id,
+            Some(acc) => {
+                let id: Uuid = acc.try_get("id").unwrap();
+                id
+            },
             None => {
                 let new_id = Uuid::new_v4();
-                sqlx::query!(
+                sqlx::query(
                     r#"
                     INSERT INTO accounts (id, phone, created_at, updated_at)
                     VALUES ($1, $2, $3, $4)
                     "#,
-                    new_id,
-                    phone,
-                    Utc::now(),
-                    Utc::now()
                 )
+                .bind(new_id)
+                .bind(phone)
+                .bind(Utc::now())
+                .bind(Utc::now())
                 .execute(&self.db)
                 .await?;
                 new_id
@@ -290,40 +290,59 @@ impl AuthService {
 
     pub async fn create_profile(&self, account_id: Uuid, request: CreateProfileRequest) -> Result<UserProfile, AuthError> {
         let profile_id = Uuid::new_v4();
-        sqlx::query_as!(
-            UserProfile,
+        let row = sqlx::query(
             r#"
             INSERT INTO user_profiles (id, account_id, name, relationship, date_of_birth, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING id, account_id, name, relationship as "relationship: ProfileRelationship", date_of_birth, created_at, updated_at
+            RETURNING id, account_id, name, relationship, date_of_birth, created_at, updated_at
             "#,
-            profile_id,
-            account_id,
-            request.name,
-            request.relationship as ProfileRelationship,
-            request.date_of_birth,
-            Utc::now(),
-            Utc::now()
         )
+        .bind(profile_id)
+        .bind(account_id)
+        .bind(&request.name)
+        .bind(request.relationship as ProfileRelationship)
+        .bind(request.date_of_birth)
+        .bind(Utc::now())
+        .bind(Utc::now())
         .fetch_one(&self.db)
-        .await
+        .await?;
+
+        Ok(UserProfile {
+            id: row.try_get("id").unwrap(),
+            account_id: row.try_get("account_id").unwrap(),
+            name: row.try_get("name").unwrap(),
+            relationship: row.try_get("relationship").unwrap(),
+            date_of_birth: row.try_get("date_of_birth").unwrap(),
+            created_at: row.try_get("created_at").unwrap(),
+            updated_at: row.try_get("updated_at").unwrap(),
+        })
     }
 
     /// Get all profiles for an account
     pub async fn get_profiles(&self, account_id: Uuid) -> Result<Vec<UserProfile>, AuthError> {
-        sqlx::query_as!(
-            UserProfile,
+        let rows = sqlx::query(
             r#"
-            SELECT id, account_id, name, relationship as "relationship: ProfileRelationship", 
-                   date_of_birth, created_at, updated_at
+            SELECT id, account_id, name, relationship, date_of_birth, created_at, updated_at
             FROM user_profiles 
             WHERE account_id = $1
             ORDER BY created_at
             "#,
-            account_id
         )
+        .bind(account_id)
         .fetch_all(&self.db)
-        .await
+        .await?;
+
+        rows.iter().map(|row| {
+            Ok(UserProfile {
+                id: row.try_get("id").unwrap(),
+                account_id: row.try_get("account_id").unwrap(),
+                name: row.try_get("name").unwrap(),
+                relationship: row.try_get("relationship").unwrap(),
+                date_of_birth: row.try_get("date_of_birth").unwrap(),
+                created_at: row.try_get("created_at").unwrap(),
+                updated_at: row.try_get("updated_at").unwrap(),
+            })
+        }).collect()
     }
 
     /// Generate JWT access and refresh tokens for an account

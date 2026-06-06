@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use crate::app::App;
+use telemetry::{trace_request, trace_response};
 
 #[derive(Debug, Deserialize)]
 pub struct DocumentQuery {
@@ -85,11 +86,11 @@ pub async fn upload_document(
         if let Err(e) = app.document_service.create_document_record(
             document_id,
             patient_id,
-            filename,
-            content_type,
+            filename.clone(),
+            content_type.clone(),
             file_data.len() as u64,
             storage_path,
-            document_type,
+            document_type.clone(),
         ).await {
             tracing::error!("Failed to create document record: {}", e);
             return Err(StatusCode::INTERNAL_SERVER_ERROR);

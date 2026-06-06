@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use crate::app::App;
+use telemetry::{trace_request, trace_response};
 
 // Manual input structures
 #[derive(Debug, Deserialize)]

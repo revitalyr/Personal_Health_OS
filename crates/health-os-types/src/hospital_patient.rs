@@ -190,7 +190,7 @@ mod tests {
     fn test_patient_admission() {
         let mut patient = HospitalPatient::new(
             ProfileId::new_v4(),
-            ExternalPatientCode("P12345".to_string().into()),
+            "P12345".to_string(),
         );
         
         // Admit patient
@@ -207,7 +207,7 @@ mod tests {
     fn test_patient_discharge() {
         let mut patient = HospitalPatient::new(
             ProfileId::new_v4(),
-            ExternalPatientCode("P12345".to_string().into()),
+            "P12345".to_string(),
         );
         
         // Try to discharge without admission
@@ -224,7 +224,7 @@ mod tests {
     fn test_emergency_contact() {
         let mut patient = HospitalPatient::new(
             ProfileId::new_v4(),
-            ExternalPatientCode("P12345".to_string().into()),
+            "P12345".to_string(),
         );
         
         // Set valid emergency contact
@@ -240,7 +240,7 @@ mod tests {
     fn test_insurance() {
         let mut patient = HospitalPatient::new(
             ProfileId::new_v4(),
-            ExternalPatientCode("P12345".to_string().into()),
+            "P12345".to_string(),
         );
         
         // Set valid insurance
@@ -256,7 +256,7 @@ mod tests {
     fn test_length_of_stay() {
         let mut patient = HospitalPatient::new(
             ProfileId::new_v4(),
-            ExternalPatientCode("P12345".to_string().into()),
+            "P12345".to_string(),
         );
         
         // No stay yet

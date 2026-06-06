@@ -1,7 +1,8 @@
 use storage::{EventStore, DatabaseConfig};
 use std::sync::Arc;
 use crate::{services::DocumentService, nats::NatsClient, storage::DocumentStorage};
-use auth::AuthService;
+use auth::FullAuthService;
+use sqlx::PgPool;
 
 #[derive(Clone)]
 pub struct App {
@@ -9,7 +10,7 @@ pub struct App {
     pub document_service: Arc<DocumentService>,
     pub nats_client: Arc<NatsClient>,
     pub document_storage: Arc<DocumentStorage>,
-    pub auth_service: Arc<AuthService>,
+    pub auth_service: Arc<FullAuthService>,
 }
 
 impl App {
@@ -30,7 +31,7 @@ impl App {
         let nats_client = Arc::new(NatsClient::new(&config.nats_url).await?);
 
         // Initialize document storage
-        let document_storage = Arc::new(DocumentStorage::new(config.clone()).await?);
+        let document_storage = Arc::new(DocumentStorage::new(config.clone()).await.map_err(|e| anyhow::anyhow!("{:?}", e))?);
 
         // Initialize document service
         let document_service = Arc::new(DocumentService::new(
@@ -41,7 +42,9 @@ impl App {
         ));
 
         // Initialize auth service
-        let auth_service = Arc::new(AuthService::new(
+        let db = PgPool::connect(&config.database_url).await?;
+        let auth_service = Arc::new(FullAuthService::new(
+            db,
             config.jwt_secret.clone(),
             "health_os".to_string(),
             "health_os_api".to_string(),

@@ -1,19 +1,17 @@
-use opentelemetry::sdk::trace::{self, RandomIdGenerator, Sampler};
-use opentelemetry::sdk::{Resource, KeyValue};
-use opentelemetry::trace::TraceError;
-use std::env;
-use tracing::Level;
+use opentelemetry_sdk::trace::{self, RandomIdGenerator, Sampler};
+use opentelemetry_sdk::Resource;
+use opentelemetry::KeyValue;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer, Registry};
 
-pub fn init_telemetry(service_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn init_telemetry(service_name: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     init_tracing(service_name)?;
     init_opentelemetry(service_name)?;
     Ok(())
 }
 
-fn init_tracing(service_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn init_tracing(service_name: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new("info"));
 
@@ -31,7 +29,7 @@ fn init_tracing(service_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn init_opentelemetry(service_name: &str) -> Result<(), TraceError> {
+fn init_opentelemetry(service_name: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let tracer = opentelemetry_jaeger::new_agent_pipeline()
         .with_service_name(service_name)
         .with_trace_config(
@@ -43,7 +41,7 @@ fn init_opentelemetry(service_name: &str) -> Result<(), TraceError> {
                     KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
                 ])),
         )
-        .install_batch(opentelemetry::sdk::runtime::Tokio)?;
+        .install_batch(opentelemetry_sdk::runtime::Tokio)?;
 
     let telemetry_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 

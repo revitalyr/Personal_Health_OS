@@ -1,10 +1,10 @@
 use axum::{
     routing::{get, post, delete},
     Router,
-    middleware,
+    middleware as axum_middleware,
 };
 
-use crate::{app::App, handlers, middleware};
+use crate::{app::App, handlers, middleware as app_middleware};
 
 pub fn create_router(app: App) -> Router {
     Router::new()
@@ -43,6 +43,6 @@ pub fn create_router(app: App) -> Router {
         .route("/documents/search", get(handlers::documents::search_documents))
         .route("/documents/:document_id/classify", post(handlers::documents::classify_document))
         
-        .layer(middleware::from_fn_with_state(app.clone(), middleware::auth_middleware))
+        .layer(axum_middleware::from_fn_with_state(app.clone(), app_middleware::auth_middleware))
         .with_state(app)
 }

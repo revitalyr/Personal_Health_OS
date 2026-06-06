@@ -9,6 +9,8 @@ pub struct Config {
     pub openai_api_key: Option<String>,
     pub ollama_url: Option<String>,
     pub jwt_secret: String,
+    pub google_client_id: Option<String>,
+    pub apple_client_id: Option<String>,
 }
 
 impl Config {
@@ -30,6 +32,9 @@ impl Config {
         let jwt_secret = env::var("JWT_SECRET")
             .unwrap_or_else(|_| "your-super-secret-jwt-key-change-in-production".to_string());
 
+        let google_client_id = env::var("GOOGLE_CLIENT_ID").ok();
+        let apple_client_id = env::var("APPLE_CLIENT_ID").ok();
+
         Ok(Config {
             port,
             database_url,
@@ -37,6 +42,8 @@ impl Config {
             openai_api_key,
             ollama_url,
             jwt_secret,
+            google_client_id,
+            apple_client_id,
         })
     }
 }

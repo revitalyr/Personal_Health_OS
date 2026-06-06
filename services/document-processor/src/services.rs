@@ -4,6 +4,8 @@ use std::sync::Arc;
 use uuid::Uuid;
 use chrono::{DateTime, Utc, NaiveDate};
 use serde_json::Value;
+use serde::Serialize;
+use sqlx::Row;
 use crate::{nats::NatsClient, storage::DocumentStorage, config::Config, processors::{OcrProcessor, DicomProcessor, MedicalEntityExtractor}};
 
 // Input structures for manual entry
@@ -387,7 +389,7 @@ impl DocumentService {
             EventType::LabResultReceived,
             serde_json::to_value(payload)?,
             "manual_input".to_string(),
-            input.test_date.and_hms_opt(0, 0, 0).unwrap_or_else(|| input.test_date.and_hms(0, 0, 0).unwrap()),
+            input.test_date.and_hms_opt(0, 0, 0).unwrap_or_else(|| input.test_date.and_hms_opt(0, 0, 0).unwrap()).and_utc(),
         );
 
         self.event_store.store_event(&event).await?;
@@ -436,7 +438,7 @@ impl DocumentService {
             EventType::Diagnosis,
             serde_json::to_value(payload)?,
             "manual_input".to_string(),
-            input.diagnosis_date.and_hms_opt(0, 0, 0).unwrap_or_else(|| input.diagnosis_date.and_hms(0, 0, 0).unwrap()).and_utc(),
+            input.diagnosis_date.and_hms_opt(0, 0, 0).unwrap_or_else(|| input.diagnosis_date.and_hms_opt(0, 0, 0).unwrap()).and_utc(),
         );
 
         self.event_store.store_event(&event).await?;
@@ -555,7 +557,7 @@ impl DocumentService {
 }
 
 // Data structures
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct DocumentInfo {
     pub id: Uuid,
     pub patient_id: Uuid,
