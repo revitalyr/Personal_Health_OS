@@ -219,7 +219,7 @@ impl AuthService {
         .await?;
 
         // Send SMS (implement with SMS service)
-        tracing::info!("OTP code sent to {}", phone);
+        tracing::debug!("OTP code sent");
 
         Ok(())
     }
