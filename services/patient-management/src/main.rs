@@ -1,6 +1,4 @@
 use axum::{
-    extract::State,
-    http::StatusCode,
     response::Json,
     routing::get,
     Router,
@@ -9,28 +7,17 @@ use serde_json::json;
 use std::net::SocketAddr;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
-use tracing::{info, error};
+use tower_http::cors::{CorsLayer, Any};
+use tracing::info;
+use tokio::net::TcpListener;
 
 use patient_management::patient_routes;
-use telemetry;
-
-#[derive(Clone)]
-pub struct AppState {
-    pub db: sqlx::PgPool,
-    pub config: Config,
-}
-
-#[derive(Clone)]
-pub struct Config {
-    pub database_url: String,
-    pub jwt_secret: String,
-    pub port: u16,
-}
+use patient_management::{AppState, Config};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize telemetry
-    telemetry::init();
+    // Initialize tracing
+    tracing_subscriber::fmt::init();
 
     // Load configuration
     let config = Config {
@@ -67,9 +54,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
     info!("Patient Management Service starting on {}", addr);
 
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await?;
+    let listener = TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }
