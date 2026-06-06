@@ -61,7 +61,7 @@ async fn create_patient(
     
     // Validate request
     if let Err(validation_error) = validator::Validate::validate(&request) {
-        return Err(PatientError::Validation(format!("{:?}", validation_error)));
+        return Err(PatientError::Validation(validation_error));
     }
     
     let patient = patient_service.create_patient(request).await?;
@@ -106,7 +106,7 @@ async fn get_patient(
     Path(patient_id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
-    let patient = patient_service.get_patient(patient_id).await?;
+    let patient = patient_service.get_patient(crate::types::PatientId(patient_id)).await?;
     
     Ok(Json(serde_json::json!({
         "success": true,
@@ -120,7 +120,7 @@ async fn update_patient(
     Json(request): Json<UpdatePatientRequest>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
-    let patient = patient_service.update_patient(patient_id, request).await?;
+    let patient = patient_service.update_patient(crate::types::PatientId(patient_id), request).await?;
     
     Ok(Json(serde_json::json!({
         "success": true,
@@ -306,7 +306,7 @@ async fn search_by_patient_id(
     Path(patient_id): Path<String>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
-    let patient = patient_service.get_patient_by_patient_id(&patient_id).await?;
+    let patient = patient_service.get_patient_by_patient_id(&crate::types::ExternalPatientCode(patient_id)).await?;
     
     Ok(Json(serde_json::json!({
         "success": true,

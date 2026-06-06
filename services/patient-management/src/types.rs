@@ -146,19 +146,19 @@ pub struct DiastolicPressure(pub i32);
 pub struct HeartRate(pub i32);
 
 /// Body temperature in Celsius
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct BodyTemperature(pub f32);
 
 /// Weight in kilograms
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct WeightKg(pub f32);
 
 /// Height in centimeters
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct HeightCm(pub f32);
 
 /// Oxygen saturation percentage
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct OxygenSaturation(pub f32);
 
 // ==================== DATE/TIME TYPES ====================

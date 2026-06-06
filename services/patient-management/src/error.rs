@@ -1,5 +1,11 @@
 use thiserror::Error;
-use crate::models::PatientId;
+use crate::types::{PatientId, ExternalPatientCode};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
+use serde_json::json;
 
 #[derive(Debug, Error)]
 pub enum PatientError {
@@ -7,7 +13,7 @@ pub enum PatientError {
     PatientNotFound(PatientId),
     
     #[error("Patient ID already exists: {0}")]
-    PatientIdExists(PatientId),
+    PatientIdExists(ExternalPatientCode),
     
     #[error("Invalid patient data: {field} - {message}")]
     InvalidData { field: String, message: String },
@@ -97,7 +103,43 @@ impl PatientError {
     pub fn rate_limit_exceeded(resource: impl Into<String>) -> Self {
         Self::RateLimitExceeded(resource.into())
     }
-    
+}
+
+impl IntoResponse for PatientError {
+    fn into_response(self) -> Response {
+        let (status, error_type, message) = match &self {
+            Self::PatientNotFound(_) => (StatusCode::NOT_FOUND, "patient_not_found", self.to_string()),
+            Self::PatientIdExists(_) => (StatusCode::CONFLICT, "patient_id_exists", self.to_string()),
+            Self::InvalidData { .. } => (StatusCode::BAD_REQUEST, "invalid_data", self.to_string()),
+            Self::PatientAlreadyAdmitted(_) => (StatusCode::CONFLICT, "patient_already_admitted", self.to_string()),
+            Self::PatientNotAdmitted(_) => (StatusCode::CONFLICT, "patient_not_admitted", self.to_string()),
+            Self::EncounterNotFound => (StatusCode::NOT_FOUND, "encounter_not_found", self.to_string()),
+            Self::InvalidEncounterDates { .. } => (StatusCode::BAD_REQUEST, "invalid_encounter_dates", self.to_string()),
+            Self::AllergyExists(_) => (StatusCode::CONFLICT, "allergy_exists", self.to_string()),
+            Self::MedicationExists(_) => (StatusCode::CONFLICT, "medication_exists", self.to_string()),
+            Self::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, "database_error", self.to_string()),
+            Self::Validation(_) => (StatusCode::BAD_REQUEST, "validation_error", self.to_string()),
+            Self::Unauthorized { .. } => (StatusCode::UNAUTHORIZED, "unauthorized", self.to_string()),
+            Self::InsufficientPermissions { .. } => (StatusCode::FORBIDDEN, "insufficient_permissions", self.to_string()),
+            Self::ServiceUnavailable { .. } => (StatusCode::SERVICE_UNAVAILABLE, "service_unavailable", self.to_string()),
+            Self::ExternalService { .. } => (StatusCode::BAD_GATEWAY, "external_service_error", self.to_string()),
+            Self::Configuration(_) => (StatusCode::INTERNAL_SERVER_ERROR, "configuration_error", self.to_string()),
+            Self::RateLimitExceeded(_) => (StatusCode::TOO_MANY_REQUESTS, "rate_limit_exceeded", self.to_string()),
+        };
+
+        let body = json!({
+            "error": error_type,
+            "message": message,
+            "is_client_error": self.is_client_error(),
+            "is_server_error": self.is_server_error(),
+            "is_retryable": self.is_retryable(),
+        });
+
+        (status, Json(body)).into_response()
+    }
+}
+
+impl PatientError {
     /// Returns true if this error is client-side (4xx)
     pub fn is_client_error(&self) -> bool {
         matches!(
@@ -140,3 +182,4 @@ impl PatientError {
         )
     }
 }
+

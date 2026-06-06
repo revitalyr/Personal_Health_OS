@@ -1,12 +1,9 @@
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use chrono::{DateTime, Utc, NaiveDate};
 use validator::Validate;
 
-mod types;
-pub use types::*;
+pub use crate::types::*;
 
-use crate::auth::UserProfile;
+use auth::UserProfile;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct HospitalPatient {
@@ -137,21 +134,19 @@ pub struct PatientMedication {
 pub struct CreatePatientRequest {
     pub profile_id: ProfileId,
 
-    #[validate(length(min = 3, max = 50))]
     pub patient_id: ExternalPatientCode,
 
     pub blood_type: Option<BloodType>,
 
     pub emergency_contact_name: Option<ContactName>,
 
-    #[validate(length(min = 10, max = 20))]
     pub emergency_contact_phone: Option<PhoneNumber>,
 
     pub insurance_provider: Option<InsuranceProvider>,
     pub insurance_policy_number: Option<PolicyNumber>,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct UpdatePatientRequest {
     pub blood_type: Option<BloodType>,
 
@@ -199,7 +194,6 @@ pub struct RecordVitalsRequest {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct AddAllergyRequest {
-    #[validate(length(min = 1, max = 255))]
     pub allergen: AllergenName,
     pub severity: AllergySeverity,
     pub reaction: Option<AllergyReaction>,
@@ -208,13 +202,9 @@ pub struct AddAllergyRequest {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct PrescribeMedicationRequest {
-    #[validate(length(min = 1, max = 255))]
     pub medication_name: MedicationName,
-    #[validate(length(min = 1, max = 100))]
     pub dosage: Dosage,
-    #[validate(length(min = 1, max = 100))]
     pub frequency: Frequency,
-    #[validate(length(min = 1, max = 50))]
     pub route: AdministrationRoute,
     pub start_date: StartDate,
     pub end_date: Option<EndDate>,
