@@ -715,6 +715,27 @@ impl PatientService {
     }
 
     // Helper methods
+    pub async fn user_has_access_to_patient(&self, user_id: &str, patient_id: &Uuid) -> crate::error::Result<bool> {
+        let user_uuid = Uuid::parse_str(user_id)
+            .map_err(|_| PatientError::unauthorized("Invalid user ID in token"))?;
+        
+        // Check if user has a profile relationship with this patient
+        let count: i64 = sqlx::query_scalar(
+            r#"
+            SELECT COUNT(*) FROM user_profiles up
+            JOIN hospital_patients hp ON up.account_id = hp.id
+            WHERE up.account_id = $1 AND hp.id = $2
+            "#
+        )
+        .bind(user_uuid)
+        .bind(patient_id)
+        .fetch_one(&self.db)
+        .await
+        .map_err(PatientError::Database)?;
+        
+        Ok(count > 0)
+    }
+
     async fn patient_id_exists(&self, patient_id: &ExternalPatientCode) -> crate::error::Result<bool> {
         let count: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM hospital_patients WHERE patient_id = $1"

@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, Query, State, Extension},
     http::StatusCode,
     response::Json,
     routing::{get, post, put, delete},
@@ -103,9 +103,16 @@ async fn list_patients(
 
 async fn get_patient(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
+    
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("access patient"));
+    }
+    
     let patient = patient_service.get_patient(crate::types::PatientId(patient_id)).await?;
     
     Ok(Json(serde_json::json!({
@@ -116,10 +123,17 @@ async fn get_patient(
 
 async fn update_patient(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
     Json(request): Json<UpdatePatientRequest>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
+    
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("access patient"));
+    }
+    
     let patient = patient_service.update_patient(crate::types::PatientId(patient_id), request).await?;
     
     Ok(Json(serde_json::json!({
@@ -130,10 +144,17 @@ async fn update_patient(
 
 async fn admit_patient(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
     Json(request): Json<AdmitPatientRequest>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
+    
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("admit patient"));
+    }
+    
     let patient = patient_service.admit_patient(patient_id, request).await?;
     
     Ok(Json(serde_json::json!({
@@ -145,10 +166,17 @@ async fn admit_patient(
 
 async fn discharge_patient(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
     Json(request): Json<DischargePatientRequest>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
+    
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("discharge patient"));
+    }
+    
     let patient = patient_service.discharge_patient(patient_id, request).await?;
     
     Ok(Json(serde_json::json!({
@@ -160,10 +188,17 @@ async fn discharge_patient(
 
 async fn create_encounter(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
     Json(request): Json<CreateEncounterRequest>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
+    
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("create encounter"));
+    }
+    
     let encounter = patient_service.create_encounter(request, patient_id).await?;
     
     Ok(Json(serde_json::json!({
@@ -175,10 +210,17 @@ async fn create_encounter(
 
 async fn get_patient_encounters(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
     Query(query): Query<ListEncountersQuery>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
+    
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("view encounters"));
+    }
+    
     let limit = query.limit.unwrap_or(20);
     let encounters = patient_service.get_patient_encounters(patient_id, limit).await?;
     
@@ -190,14 +232,19 @@ async fn get_patient_encounters(
 
 async fn record_vitals(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
     Json(request): Json<RecordVitalsRequest>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
     
-    // For now, we'll use a fixed recorded_by ID. In a real implementation,
-    // this would come from the authenticated user
-    let recorded_by = Uuid::new_v4();
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("record vitals"));
+    }
+    
+    // Use the authenticated user's ID as recorded_by
+    let recorded_by = Uuid::parse_str(&user_id).map_err(|_| PatientError::unauthorized("Invalid user ID"))?;
     
     let vitals = patient_service.record_vitals(patient_id, request, recorded_by).await?;
     
@@ -210,10 +257,17 @@ async fn record_vitals(
 
 async fn get_patient_vitals(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
     Query(query): Query<ListVitalsQuery>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
+    
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("view vitals"));
+    }
+    
     let limit = query.limit.unwrap_or(50);
     let vitals = patient_service.get_patient_vitals(patient_id, limit).await?;
     
@@ -225,10 +279,17 @@ async fn get_patient_vitals(
 
 async fn add_allergy(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
     Json(request): Json<AddAllergyRequest>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
+    
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("add allergy"));
+    }
+    
     let allergy = patient_service.add_allergy(patient_id, request).await?;
     
     Ok(Json(serde_json::json!({
@@ -240,9 +301,16 @@ async fn add_allergy(
 
 async fn get_patient_allergies(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
+    
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("view allergies"));
+    }
+    
     let allergies = patient_service.get_patient_allergies(patient_id).await?;
     
     Ok(Json(serde_json::json!({
@@ -253,14 +321,19 @@ async fn get_patient_allergies(
 
 async fn prescribe_medication(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
     Json(request): Json<PrescribeMedicationRequest>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
     
-    // For now, we'll use a fixed prescribed_by ID. In a real implementation,
-    // this would come from the authenticated user
-    let prescribed_by = Uuid::new_v4();
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("prescribe medication"));
+    }
+    
+    // Use the authenticated user's ID as prescribed_by
+    let prescribed_by = Uuid::parse_str(&user_id).map_err(|_| PatientError::unauthorized("Invalid user ID"))?;
     
     let medication = patient_service.prescribe_medication(patient_id, request, prescribed_by).await?;
     
@@ -273,10 +346,17 @@ async fn prescribe_medication(
 
 async fn get_patient_medications(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
     Query(query): Query<HashMap<String, String>>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
+    
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("view medications"));
+    }
+    
     let active_only = query.get("active_only").map(|v| v == "true").unwrap_or(true);
     let medications = patient_service.get_patient_medications(patient_id, active_only).await?;
     
@@ -288,10 +368,17 @@ async fn get_patient_medications(
 
 async fn get_patient_timeline(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<Uuid>,
     Query(query): Query<GetTimelineQuery>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
+    
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient_id).await? {
+        return Err(PatientError::insufficient_permissions("view timeline"));
+    }
+    
     let limit = query.limit.unwrap_or(100);
     let timeline = patient_service.get_patient_timeline(patient_id, limit).await?;
     
@@ -303,10 +390,16 @@ async fn get_patient_timeline(
 
 async fn search_by_patient_id(
     State(state): State<crate::AppState>,
+    Extension(user_id): Extension<String>,
     Path(patient_id): Path<String>,
 ) -> Result<Json<serde_json::Value>, PatientError> {
     let patient_service = PatientService::new(state.db.clone());
-    let patient = patient_service.get_patient_by_patient_id(&crate::types::ExternalPatientCode(patient_id)).await?;
+    let patient = patient_service.get_patient_by_patient_id(&crate::types::ExternalPatientCode(patient_id.clone())).await?;
+    
+    // Authorization: verify user has access to this patient
+    if !patient_service.user_has_access_to_patient(&user_id, &patient.id.0).await? {
+        return Err(PatientError::insufficient_permissions("search patient"));
+    }
     
     Ok(Json(serde_json::json!({
         "success": true,
