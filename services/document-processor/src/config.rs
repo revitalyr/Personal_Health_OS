@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::env;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
     pub port: u16,

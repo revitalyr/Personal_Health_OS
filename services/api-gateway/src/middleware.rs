@@ -4,29 +4,7 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use tower_http::cors::CorsLayer;
-use uuid::Uuid;
-
 use crate::app::App;
-
-pub fn cors_layer() -> CorsLayer {
-    CorsLayer::new()
-        .allow_origin([
-            "http://localhost:3000".parse(),
-            "http://localhost:3001".parse(),
-        ])
-        .allow_methods([
-            axum::http::Method::GET,
-            axum::http::Method::POST,
-            axum::http::Method::PUT,
-            axum::http::Method::DELETE,
-        ])
-        .allow_headers([
-            header::AUTHORIZATION,
-            header::ACCEPT,
-            header::CONTENT_TYPE,
-        ])
-}
 
 pub async fn auth_middleware(
     State(app): State<App>,

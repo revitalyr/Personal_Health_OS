@@ -4,14 +4,16 @@ use axum::{
     response::Json,
 };
 use chrono::{DateTime, Utc};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use timeline_engine::{TimelineFilter, ExportFormat};
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use telemetry::{trace_request, trace_response};
 
-#[derive(Debug, Deserialize)]
+use crate::app::App;
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct TimelineQuery {
     pub start_date: Option<DateTime<Utc>>,
     pub end_date: Option<DateTime<Utc>>,
@@ -33,10 +35,6 @@ pub async fn get_timeline(
         return Err(StatusCode::FORBIDDEN);
     }
     
-    // Parse event types filter
-    let event_types = params.event_types
-        .map(|types| types.split(',').map(|s| s.trim().to_string()).collect::<Vec<_>>());
-
     // Build filter
     let filter = TimelineFilter {
         start_date: params.start_date,
@@ -45,14 +43,8 @@ pub async fn get_timeline(
         limit: params.limit,
     };
 
-    // Get events from storage
-    let events = app.event_store
-        .get_events_by_patient_with_filter(
-            patient_id,
-            filter.start_date,
-            filter.end_date,
-            filter.limit.map(|l| l as i64),
-        )
+    // Get events via service (filtering handled by TimelineEngine)
+    let events = app.timeline_service.get_timeline(patient_id)
         .await
         .map_err(|e| {
             tracing::error!("Failed to get events: {}", e);
@@ -104,8 +96,8 @@ pub async fn get_summary(
         return Err(StatusCode::FORBIDDEN);
     }
     
-    // Get all events for the patient
-    let events = app.event_store.get_events_by_patient(patient_id)
+    // Get events via service
+    let events = app.timeline_service.get_timeline(patient_id)
         .await
         .map_err(|e| {
             tracing::error!("Failed to get events: {}", e);
@@ -177,8 +169,8 @@ pub async fn export_timeline(
         _ => ExportFormat::Json,
     };
 
-    // Get events from storage
-    let events = app.event_store.get_events_by_patient(patient_id)
+    // Get events via service
+    let events = app.timeline_service.get_timeline(patient_id)
         .await
         .map_err(|e| {
             tracing::error!("Failed to get events: {}", e);
@@ -189,7 +181,7 @@ pub async fn export_timeline(
     let timeline = timeline_engine::TimelineEngine::build_timeline(events);
 
     // Export timeline
-    let exported_data = timeline_engine::TimelineEngine::export_timeline(&timeline, export_format)
+    let exported_data = timeline_engine::TimelineEngine::export_timeline(&timeline, &export_format)
         .map_err(|e| {
             tracing::error!("Failed to export timeline: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR

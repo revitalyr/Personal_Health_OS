@@ -10,12 +10,14 @@ use uuid::Uuid;
 use crate::app::App;
 use telemetry::{trace_request, trace_response};
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct DicomQuery {
     pub include_metadata: Option<bool>,
     pub include_thumbnails: Option<bool>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct DicomMetadata {
     pub patient_id: String,
@@ -184,6 +186,7 @@ pub async fn get_dicom_image(
 }
 
 // DICOM study management
+#[allow(dead_code)]
 pub async fn get_dicom_studies(
     State(app): State<App>,
     Extension(user_id): Extension<Uuid>,
@@ -213,6 +216,7 @@ pub async fn get_dicom_studies(
     Ok(Json(response))
 }
 
+#[allow(dead_code)]
 pub async fn get_dicom_series(
     State(app): State<App>,
     Path((patient_id, study_id)): Path<(Uuid, String)>,
@@ -238,6 +242,7 @@ pub async fn get_dicom_series(
 }
 
 // DICOM annotation
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct DicomAnnotation {
     pub x: f32,
@@ -250,10 +255,11 @@ pub struct DicomAnnotation {
     pub created_by: String,
 }
 
+#[allow(dead_code)]
 pub async fn add_dicom_annotation(
     State(app): State<App>,
-    Path(document_id): Path<Uuid>,
     Json(annotation): Json<DicomAnnotation>,
+    Path(document_id): Path<Uuid>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("POST", format!("/dicom/{}/annotations", document_id));
     
@@ -279,6 +285,7 @@ pub async fn add_dicom_annotation(
     Ok(Json(response))
 }
 
+#[allow(dead_code)]
 pub async fn get_dicom_annotations(
     State(app): State<App>,
     Path(document_id): Path<Uuid>,

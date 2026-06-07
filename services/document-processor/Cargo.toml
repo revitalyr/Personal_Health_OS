@@ -20,18 +20,17 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 async-nats = { workspace = true }
 futures-util = "0.3"
-regex = { workspace = true }
 
-# Document processing (simplified for demo)
-# tesseract = "0.13"
-image = "0.24"
-# pdf = "0.8"
-# dicom-rs = "0.6"  # Temporarily commented out
+# Internal crates
+ocr-processor = { path = "../../crates/ocr-processor" }
+dicom-processor = { path = "../../crates/dicom-processor" }
+nlp-processor = { path = "../../crates/nlp-processor" }
 
 # File handling
 mime = "0.3"
 mime_guess = "2.0"
 tempfile = "3.8"
+image = "0.25"
 
 # Storage & Database
 sqlx = { workspace = true, features = ["runtime-tokio-rustls", "postgres"] }

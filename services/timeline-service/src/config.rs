@@ -6,7 +6,6 @@ pub struct Config {
     pub port: u16,
     pub database_url: String,
     pub nats_url: String,
-    pub redis_url: Option<String>,
     pub max_connections: u32,
     pub jwt_secret: String,
 }
@@ -24,8 +23,6 @@ impl Config {
         let nats_url = env::var("NATS_URL")
             .unwrap_or_else(|_| "nats://localhost:4222".to_string());
 
-        let redis_url = env::var("REDIS_URL").ok();
-
         let max_connections: u32 = env::var("DB_MAX_CONNECTIONS")
             .unwrap_or_else(|_| "10".to_string())
             .parse()
@@ -38,7 +35,6 @@ impl Config {
             port,
             database_url,
             nats_url,
-            redis_url,
             max_connections,
             jwt_secret,
         })

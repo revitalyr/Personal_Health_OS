@@ -130,7 +130,7 @@ fn bench_export_json(c: &mut Criterion) {
     let timeline = TimelineEngine::build_timeline(events);
     
     c.bench_function("export_json", |b| {
-        b.iter(|| TimelineEngine::export_timeline(black_box(&timeline), timeline_engine::ExportFormat::Json))
+        b.iter(|| TimelineEngine::export_timeline(black_box(&timeline), &timeline_engine::ExportFormat::Json))
     });
 }
 
@@ -139,7 +139,7 @@ fn bench_export_text(c: &mut Criterion) {
     let timeline = TimelineEngine::build_timeline(events);
     
     c.bench_function("export_text", |b| {
-        b.iter(|| TimelineEngine::export_timeline(black_box(&timeline), timeline_engine::ExportFormat::Text))
+        b.iter(|| TimelineEngine::export_timeline(black_box(&timeline), &timeline_engine::ExportFormat::Text))
     });
 }
 
@@ -148,7 +148,7 @@ fn bench_export_csv(c: &mut Criterion) {
     let timeline = TimelineEngine::build_timeline(events);
     
     c.bench_function("export_csv", |b| {
-        b.iter(|| TimelineEngine::export_timeline(black_box(&timeline), timeline_engine::ExportFormat::Csv))
+        b.iter(|| TimelineEngine::export_timeline(black_box(&timeline), &timeline_engine::ExportFormat::Csv))
     });
 }
 

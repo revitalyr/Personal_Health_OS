@@ -6,27 +6,33 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use telemetry::{trace_request, trace_response};
 
+use crate::app::App;
+
+/// Request body for POST /auth/login.
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
     pub email: String,
-    pub password: String,
+    pub _password: String,
 }
 
+/// Request body for POST /auth/register.
 #[derive(Debug, Deserialize)]
 pub struct RegisterRequest {
     pub email: String,
-    pub password: String,
+    pub _password: String,
     pub name: String,
 }
 
+/// Response body for auth endpoints.
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {
     pub token: String,
     pub user: UserResponse,
 }
 
+/// User payload within AuthResponse.
 #[derive(Debug, Serialize)]
 pub struct UserResponse {
     pub id: Uuid,
@@ -34,6 +40,7 @@ pub struct UserResponse {
     pub name: String,
 }
 
+/// POST /auth/login — Authenticate a user and return a JWT token.
 pub async fn login(
     State(app): State<App>,
     Json(payload): Json<LoginRequest>,
@@ -41,7 +48,6 @@ pub async fn login(
     trace_request!("POST", "/auth/login");
     
     // TODO: Implement actual authentication logic
-    // For now, create a mock user and token
     let user_id = Uuid::new_v4();
     
     let user = auth::User {
@@ -68,6 +74,7 @@ pub async fn login(
     Ok(Json(response))
 }
 
+/// POST /auth/register — Create a new user account and return a JWT token.
 pub async fn register(
     State(app): State<App>,
     Json(payload): Json<RegisterRequest>,
@@ -75,7 +82,6 @@ pub async fn register(
     trace_request!("POST", "/auth/register");
     
     // TODO: Implement actual registration logic
-    // For now, create a mock user and token
     let user_id = Uuid::new_v4();
     
     let user = auth::User {

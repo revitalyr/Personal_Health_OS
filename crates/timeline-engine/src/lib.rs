@@ -19,15 +19,15 @@ pub struct Timeline {
 
 /// Summary statistics for a timeline
 #[derive(Debug, Clone)]
-pub struct TimelineSummary {
+pub struct TimelineSummary<'a> {
     /// Total number of events
     pub total_events: usize,
     /// Date range (start, end)
     pub date_range: (DateTime<Utc>, DateTime<Utc>),
     /// Count of events by type
     pub event_types: HashMap<EventType, usize>,
-    /// Most recent events (last 10)
-    pub recent_events: Vec<MedicalEvent>,
+    /// Most recent events (last 10) — borrowed from the source `Timeline`
+    pub recent_events: Vec<&'a MedicalEvent>,
 }
 
 /// Filter options for timeline queries
@@ -65,7 +65,6 @@ impl TimelineEngine {
         let patient_id = events.first().map(|e| e.patient_id).unwrap_or_default();
         let mut sorted_events = events;
         
-        // Sort events by timestamp
         sorted_events.sort_by_key(|e| e.timestamp);
         
         Timeline {
@@ -108,7 +107,6 @@ impl TimelineEngine {
             })
             .collect();
         
-        // Sort by timestamp
         filtered_events.sort_by_key(|e| e.timestamp);
         
         // Apply limit
@@ -124,9 +122,8 @@ impl TimelineEngine {
     }
 
     /// Generate a summary statistics for a timeline
-    pub fn generate_summary(timeline: &Timeline) -> TimelineSummary {
+    pub fn generate_summary(timeline: &Timeline) -> TimelineSummary<'_> {
         let total_events = timeline.events.len();
-        
         let (start_date, end_date) = if timeline.events.is_empty() {
             (Utc::now(), Utc::now())
         } else {
@@ -140,11 +137,10 @@ impl TimelineEngine {
             *event_types.entry(event.event_type.clone()).or_insert(0) += 1;
         }
         
-        let recent_events = timeline.events
+        let recent_events: Vec<&MedicalEvent> = timeline.events
             .iter()
             .rev()
             .take(10)
-            .cloned()
             .collect();
         
         TimelineSummary {
@@ -181,7 +177,7 @@ impl TimelineEngine {
         // Check for duplicate events
         let mut seen = HashMap::new();
         for event in &timeline.events {
-            let key = format!("{:?}_{:?}", event.event_type, event.timestamp);
+            let key = (event.event_type.clone(), event.timestamp);
             if seen.contains_key(&key) {
                 anomalies.push(Anomaly::DuplicateEvent {
                     event_id: event.id,
@@ -234,18 +230,12 @@ impl TimelineEngine {
     }
 
     /// Export timeline to specified format (JSON, Text, or CSV)
-    pub fn export_timeline(timeline: &Timeline, format: ExportFormat) -> Result<String> {
+    pub fn export_timeline(timeline: &Timeline, format: &ExportFormat) -> Result<String> {
         match format {
-            ExportFormat::Json => {
-                serde_json::to_string_pretty(timeline)
-                    .map_err(|e| EventError::SerializationError(e))
-            }
-            ExportFormat::Text => {
-                Ok(Self::format_as_text(timeline))
-            }
-            ExportFormat::Csv => {
-                Ok(Self::format_as_csv(timeline))
-            }
+            ExportFormat::Json => serde_json::to_string_pretty(timeline)
+                .map_err(|e| EventError::SerializationError(e)),
+            ExportFormat::Text => Ok(Self::format_as_text(timeline)),
+            ExportFormat::Csv => Ok(Self::format_as_csv(timeline)),
         }
     }
 
@@ -311,7 +301,7 @@ impl TimelineEngine {
 }
 
 /// Anomaly detected in a timeline
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum Anomaly {
     /// Duplicate event detected (same type and timestamp)
     DuplicateEvent {
@@ -331,7 +321,7 @@ pub enum Anomaly {
 }
 
 /// Export format for timeline data
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum ExportFormat {
     /// JSON format
     Json,

@@ -1,8 +1,7 @@
 use async_nats::Client;
 use futures_util::stream::StreamExt;
-use serde_json;
 use thiserror::Error;
-use tracing::{info, warn, error};
+use tracing::{info, error};
 use event_model::MedicalEvent;
 
 #[derive(Debug, Error)]
@@ -32,6 +31,7 @@ impl NatsClient {
         Ok(Self { client })
     }
 
+    #[allow(dead_code)]
     pub async fn publish_document_processed(&self, document_id: uuid::Uuid) -> Result<(), NatsError> {
         let subject = "documents.processed";
         let payload = serde_json::json!({
@@ -51,6 +51,7 @@ impl NatsClient {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn publish_ocr_completed(&self, document_id: uuid::Uuid, job_id: uuid::Uuid, extracted_text: &str) -> Result<(), NatsError> {
         let subject = "ocr.completed";
         let payload = serde_json::json!({
@@ -72,6 +73,7 @@ impl NatsClient {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn publish_dicom_processed(&self, document_id: uuid::Uuid, metadata: serde_json::Value) -> Result<(), NatsError> {
         let subject = "dicom.processed";
         let payload = serde_json::json!({
@@ -92,6 +94,7 @@ impl NatsClient {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn publish_medical_entities_extracted(&self, document_id: uuid::Uuid, entities: Vec<serde_json::Value>) -> Result<(), NatsError> {
         let subject = "entities.extracted";
         let payload = serde_json::json!({
@@ -112,6 +115,7 @@ impl NatsClient {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn publish_manual_entry_created(&self, patient_id: uuid::Uuid, entry_type: &str, event_id: uuid::Uuid) -> Result<(), NatsError> {
         let subject = "manual_entries.created";
         let payload = serde_json::json!({
@@ -133,6 +137,7 @@ impl NatsClient {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn subscribe_to_document_events<F>(&self, callback: F) -> Result<(), NatsError>
     where
         F: Fn(DocumentEvent) + Send + Sync + 'static,
@@ -189,6 +194,7 @@ impl NatsClient {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn subscribe_to_ocr_events<F>(&self, callback: F) -> Result<(), NatsError>
     where
         F: Fn(OcrEvent) + Send + Sync + 'static,
@@ -266,6 +272,7 @@ impl NatsClient {
 }
 
 // Event structures
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct DocumentEvent {
     pub event_type: String,
@@ -274,6 +281,7 @@ pub struct DocumentEvent {
     pub timestamp: chrono::DateTime<chrono::Utc>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct OcrEvent {
     pub event_type: String,

@@ -1,4 +1,4 @@
-use storage::{EventStore, DatabaseConfig};
+use storage::{PostgresEventStore, DatabaseConfig};
 use std::sync::Arc;
 use crate::{services::DocumentService, nats::NatsClient, storage::DocumentStorage};
 use auth::FullAuthService;
@@ -6,8 +6,10 @@ use sqlx::PgPool;
 
 #[derive(Clone)]
 pub struct App {
-    pub event_store: Arc<EventStore>,
+    #[allow(dead_code)]
+    pub event_store: Arc<dyn storage::EventStore>,
     pub document_service: Arc<DocumentService>,
+    #[allow(dead_code)]
     pub nats_client: Arc<NatsClient>,
     pub document_storage: Arc<DocumentStorage>,
     pub auth_service: Arc<FullAuthService>,
@@ -15,7 +17,6 @@ pub struct App {
 
 impl App {
     pub async fn build(config: &crate::config::Config) -> anyhow::Result<Self> {
-        // Initialize database connection
         let db_config = DatabaseConfig {
             host: "localhost".to_string(),
             port: 5432,
@@ -25,23 +26,29 @@ impl App {
             max_connections: 10,
         };
 
-        let event_store = Arc::new(EventStore::new(db_config).await?);
+        let pg_store = PostgresEventStore::new(db_config).await?;
+        let pool = pg_store.pool().clone();
+        let event_store: Arc<dyn storage::EventStore> = Arc::new(pg_store);
 
-        // Initialize NATS client
         let nats_client = Arc::new(NatsClient::new(&config.nats_url).await?);
 
-        // Initialize document storage
         let document_storage = Arc::new(DocumentStorage::new(config.clone()).await.map_err(|e| anyhow::anyhow!("{:?}", e))?);
 
-        // Initialize document service
+        let ocr_processor: Arc<dyn crate::services::OcrProcessing> = Arc::new(ocr_processor::OcrProcessor);
+        let dicom_processor: Arc<dyn crate::services::DicomProcessing> = Arc::new(dicom_processor::DicomProcessor);
+        let nlp_extractor: Arc<dyn crate::services::NlpProcessing> = Arc::new(nlp_processor::MedicalEntityExtractor);
+
         let document_service = Arc::new(DocumentService::new(
             event_store.clone(),
+            pool,
             nats_client.clone(),
             document_storage.clone(),
             config.clone(),
+            ocr_processor,
+            dicom_processor,
+            nlp_extractor,
         ));
 
-        // Initialize auth service
         let db = PgPool::connect(&config.database_url).await?;
         let auth_service = Arc::new(FullAuthService::new(
             db,

@@ -3,7 +3,7 @@ use axum::{
     Router,
 };
 
-use crate::{app::App, handlers};
+use crate::{app::App, handlers, middleware};
 
 pub fn create_router(app: App) -> Router {
     Router::new()
@@ -15,6 +15,6 @@ pub fn create_router(app: App) -> Router {
         .route("/patients/:patient_id/events/:event_id", get(handlers::events::get_event))
         .route("/patients/:patient_id/events", get(handlers::events::list_events))
         .route("/patients/:patient_id/anomalies", get(handlers::timeline::get_anomalies))
-        .layer(middleware::from_fn_with_state(app.clone(), middleware::auth_middleware))
+        .layer(axum::middleware::from_fn_with_state(app.clone(), middleware::auth_middleware))
         .with_state(app)
 }

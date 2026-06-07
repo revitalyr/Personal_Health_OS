@@ -1,16 +1,5 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::Json,
-    routing::{get, post},
-    Router,
-};
 use std::net::SocketAddr;
-use std::sync::Arc;
-use tower::ServiceBuilder;
-use tower_http::trace::TraceLayer;
-use tracing::{info, error};
-use serde_json::Value;
+use tracing::info;
 
 mod app;
 mod config;
@@ -24,19 +13,16 @@ use config::Config;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Initialize telemetry
-    telemetry::init_telemetry("doctor-access-service")?;
+    telemetry::init_telemetry("doctor-access-service")
+        .map_err(|e| anyhow::anyhow!("Failed to initialize telemetry: {}", e))?;
 
-    // Load configuration
     let config = Config::from_env()?;
     info!("Doctor Access Service configuration loaded");
 
-    // Build application
     let app = App::build(&config).await?;
 
-    // Create router
     let router = routes::create_router(app);
 
-    // Start server
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
     info!("Doctor Access Service starting on {}", addr);
 
@@ -45,7 +31,6 @@ async fn main() -> anyhow::Result<()> {
         .with_graceful_shutdown(shutdown_signal())
         .await?;
 
-    // Shutdown telemetry
     telemetry::shutdown();
     info!("Doctor Access Service shutdown complete");
 

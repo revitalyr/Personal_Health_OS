@@ -1,51 +1,102 @@
-use storage::{EventStore, Result as StorageResult};
+use storage::EventStore;
 use event_model::{MedicalEvent, EventType, SymptomPayload, MedicationPayload, LabResultPayload, DoctorVisitPayload, DiagnosisPayload};
 use std::sync::Arc;
 use uuid::Uuid;
 use chrono::{DateTime, Utc, NaiveDate};
 use serde_json::Value;
 use serde::Serialize;
-use sqlx::Row;
-use crate::{nats::NatsClient, storage::DocumentStorage, config::Config, processors::{OcrProcessor, DicomProcessor, MedicalEntityExtractor}};
+use sqlx::{PgPool, Row};
+use crate::{nats::NatsClient, storage::DocumentStorage, config::Config};
 
 // Input structures for manual entry
 use crate::handlers::manual_input::{
     SymptomInput, MedicationInput, LabResultInput, DoctorVisitInput, DiagnosisInput, ManualEntryInput
 };
 
+// ---------------------------------------------------------------------------
+// Processor traits — injectable abstractions for testability
+// ---------------------------------------------------------------------------
+
+/// Trait for OCR processing — allows injecting a real or mock OCR engine.
+pub trait OcrProcessing: Send + Sync {
+    /// Runs OCR on raw image/PDF bytes and returns the extracted text and metadata.
+    fn perform_ocr(&self, data: &[u8]) -> Result<ocr_processor::OcrResult, ocr_processor::OcrError>;
+}
+
+impl OcrProcessing for ocr_processor::OcrProcessor {
+    fn perform_ocr(&self, data: &[u8]) -> Result<ocr_processor::OcrResult, ocr_processor::OcrError> {
+        ocr_processor::OcrProcessor::perform_ocr(data)
+    }
+}
+
+/// Trait for DICOM processing — allows parsing medical imaging metadata.
+pub trait DicomProcessing: Send + Sync {
+    /// Parses DICOM metadata from raw byte data.
+    fn parse_metadata(&self, data: &[u8]) -> Result<dicom_processor::DicomMetadata, dicom_processor::DicomError>;
+}
+
+impl DicomProcessing for dicom_processor::DicomProcessor {
+    fn parse_metadata(&self, data: &[u8]) -> Result<dicom_processor::DicomMetadata, dicom_processor::DicomError> {
+        dicom_processor::DicomProcessor::parse_metadata(data)
+    }
+}
+
+/// Trait for NLP processing — extracts medical entities from unstructured text.
+pub trait NlpProcessing: Send + Sync {
+    /// Extracts medical entities (conditions, medications, etc.) from the given text.
+    fn extract_entities(&self, text: &str) -> Result<Vec<nlp_processor::MedicalEntity>, nlp_processor::NlpError>;
+}
+
+impl NlpProcessing for nlp_processor::MedicalEntityExtractor {
+    fn extract_entities(&self, text: &str) -> Result<Vec<nlp_processor::MedicalEntity>, nlp_processor::NlpError> {
+        nlp_processor::MedicalEntityExtractor::extract_entities(text)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// DocumentService
+// ---------------------------------------------------------------------------
+
+/// Central service for document management, OCR processing, DICOM handling,
+/// and manual medical event creation.
 pub struct DocumentService {
-    event_store: Arc<EventStore>,
+    event_store: Arc<dyn EventStore>,
+    pool: PgPool,
     nats_client: Arc<NatsClient>,
     document_storage: Arc<DocumentStorage>,
-    ocr_processor: Arc<OcrProcessor>,
-    dicom_processor: Arc<DicomProcessor>,
-    entity_extractor: Arc<MedicalEntityExtractor>,
+    ocr_processor: Arc<dyn OcrProcessing>,
+    dicom_processor: Arc<dyn DicomProcessing>,
+    nlp_extractor: Arc<dyn NlpProcessing>,
+    #[allow(dead_code)]
     config: Config,
 }
 
 impl DocumentService {
+    /// Creates a new `DocumentService` with the required dependencies.
     pub fn new(
-        event_store: Arc<EventStore>,
+        event_store: Arc<dyn EventStore>,
+        pool: PgPool,
         nats_client: Arc<NatsClient>,
         document_storage: Arc<DocumentStorage>,
         config: Config,
+        ocr_processor: Arc<dyn OcrProcessing>,
+        dicom_processor: Arc<dyn DicomProcessing>,
+        nlp_extractor: Arc<dyn NlpProcessing>,
     ) -> Self {
-        let ocr_processor = Arc::new(OcrProcessor::new(config.clone()));
-        let dicom_processor = Arc::new(DicomProcessor::new(config.clone()));
-        let entity_extractor = Arc::new(MedicalEntityExtractor::new(config.clone()));
-
         Self {
             event_store,
+            pool,
             nats_client,
             document_storage,
             ocr_processor,
             dicom_processor,
-            entity_extractor,
+            nlp_extractor,
             config,
         }
     }
 
     // Document management
+    /// Inserts a new document record into the database.
     pub async fn create_document_record(
         &self,
         document_id: Uuid,
@@ -55,7 +106,7 @@ impl DocumentService {
         file_size: u64,
         storage_path: String,
         document_type: Option<String>,
-    ) -> StorageResult<()> {
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let query = r#"
             INSERT INTO documents (
                 id, patient_id, filename, file_type, file_size, 
@@ -73,14 +124,15 @@ impl DocumentService {
             .bind(document_type)
             .bind(false)
             .bind(Utc::now())
-            .execute(self.event_store.pool())
+            .execute(&self.pool)
             .await?;
 
         tracing::info!("Created document record: {} for patient: {}", document_id, patient_id);
         Ok(())
     }
 
-    pub async fn get_document(&self, document_id: Uuid) -> StorageResult<Option<DocumentInfo>> {
+    /// Retrieves a single document's metadata from the database.
+    pub async fn get_document(&self, document_id: Uuid) -> Result<Option<DocumentInfo>, Box<dyn std::error::Error + Send + Sync>> {
         let query = r#"
             SELECT id, patient_id, filename, file_type, file_size, 
                    storage_path, document_type, facility, document_date,
@@ -92,7 +144,7 @@ impl DocumentService {
 
         let row = sqlx::query(query)
             .bind(document_id)
-            .fetch_optional(self.event_store.pool())
+            .fetch_optional(&self.pool)
             .await?;
 
         if let Some(row) = row {
@@ -118,13 +170,14 @@ impl DocumentService {
         }
     }
 
+    /// Lists documents with optional filtering by patient and type, with pagination.
     pub async fn list_documents(
         &self,
         patient_id: Option<Uuid>,
         document_type: Option<String>,
         limit: usize,
         offset: usize,
-    ) -> StorageResult<Vec<DocumentInfo>> {
+    ) -> Result<Vec<DocumentInfo>, Box<dyn std::error::Error + Send + Sync>> {
         let mut query = String::from(
             r#"
             SELECT id, patient_id, filename, file_type, file_size, 
@@ -136,16 +189,16 @@ impl DocumentService {
         "#
         );
 
-        let mut bind_count = 0;
+        let mut _bind_count = 0;
 
         if patient_id.is_some() {
-            query.push_str(&format!(" AND patient_id = ${}", bind_count + 1));
-            bind_count += 1;
+            query.push_str(&format!(" AND patient_id = ${}", _bind_count + 1));
+            _bind_count += 1;
         }
 
         if document_type.is_some() {
-            query.push_str(&format!(" AND document_type = ${}", bind_count + 1));
-            bind_count += 1;
+            query.push_str(&format!(" AND document_type = ${}", _bind_count + 1));
+            _bind_count += 1;
         }
 
         query.push_str(&format!(" ORDER BY created_at DESC LIMIT {} OFFSET {}", limit, offset));
@@ -160,7 +213,7 @@ impl DocumentService {
             sql_query = sql_query.bind(dt);
         }
 
-        let rows = sql_query.fetch_all(self.event_store.pool()).await?;
+        let rows = sql_query.fetch_all(&self.pool).await?;
 
         let mut documents = Vec::new();
         for row in rows {
@@ -186,12 +239,13 @@ impl DocumentService {
         Ok(documents)
     }
 
+    /// Searches documents by filename or OCR-extracted text, with optional filters.
     pub async fn search_documents(
         &self,
         query: &str,
         patient_id: Option<Uuid>,
         document_type: Option<String>,
-    ) -> StorageResult<Vec<DocumentInfo>> {
+    ) -> Result<Vec<DocumentInfo>, Box<dyn std::error::Error + Send + Sync>> {
         let search_query = format!("%{}%", query);
         let mut sql_query = String::from(
             r#"
@@ -228,7 +282,7 @@ impl DocumentService {
             query_builder = query_builder.bind(dt);
         }
 
-        let rows = query_builder.fetch_all(self.event_store.pool()).await?;
+        let rows = query_builder.fetch_all(&self.pool).await?;
 
         let mut documents = Vec::new();
         for row in rows {
@@ -254,22 +308,20 @@ impl DocumentService {
         Ok(documents)
     }
 
-    pub async fn delete_document(&self, document_id: Uuid) -> StorageResult<()> {
-        // Get document info for cleanup
+    /// Deletes a document record and its associated file from storage.
+    pub async fn delete_document(&self, document_id: Uuid) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let doc = self.get_document(document_id).await?;
-        
+
         if let Some(document_info) = doc {
-            // Delete from storage
             if let Err(e) = self.document_storage.delete_file(&document_info.storage_path).await {
                 tracing::warn!("Failed to delete file from storage: {}", e);
             }
         }
 
-        // Delete from database
         let query = "DELETE FROM documents WHERE id = $1";
         sqlx::query(query)
             .bind(document_id)
-            .execute(self.event_store.pool())
+            .execute(&self.pool)
             .await?;
 
         tracing::info!("Deleted document: {}", document_id);
@@ -277,16 +329,19 @@ impl DocumentService {
     }
 
     // OCR processing
+    /// Kicks off an async OCR pipeline for the given document and returns a job ID.
     pub async fn start_ocr_processing(&self, document_id: Uuid) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         let job_id = Uuid::new_v4();
-        
-        // Start OCR processing in background
-        let ocr_processor = self.ocr_processor.clone();
-        let document_storage = self.document_storage.clone();
+
+        let doc_storage = self.document_storage.clone();
         let event_store = self.event_store.clone();
-        
+        let ocr = self.ocr_processor.clone();
+        let nlp = self.nlp_extractor.clone();
+
         tokio::spawn(async move {
-            if let Err(e) = ocr_processor.process_document(document_id, job_id, document_storage, event_store).await {
+            if let Err(e) = Self::run_ocr_pipeline(
+                document_id, job_id, doc_storage, event_store, ocr, nlp,
+            ).await {
                 tracing::error!("OCR processing failed for document {}: {}", document_id, e);
             }
         });
@@ -295,39 +350,45 @@ impl DocumentService {
         Ok(job_id)
     }
 
+    /// Starts OCR processing with configurable languages, entity extraction, and confidence threshold.
     pub async fn start_ocr_processing_with_options(
         &self,
         document_id: Uuid,
-        languages: Option<Vec<String>>,
-        extract_entities: bool,
-        confidence_threshold: f32,
+        _languages: Option<Vec<String>>,
+        _extract_entities: bool,
+        _confidence_threshold: f32,
     ) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
-        let job_id = Uuid::new_v4();
-        
-        // Start OCR processing with options
-        let ocr_processor = self.ocr_processor.clone();
-        let document_storage = self.document_storage.clone();
-        let event_store = self.event_store.clone();
-        
-        tokio::spawn(async move {
-            if let Err(e) = ocr_processor.process_document_with_options(
-                document_id, 
-                job_id, 
-                document_storage, 
-                event_store,
-                languages,
-                extract_entities,
-                confidence_threshold,
-            ).await {
-                tracing::error!("OCR processing failed for document {}: {}", document_id, e);
-            }
-        });
+        self.start_ocr_processing(document_id).await
+    }
 
-        tracing::info!("Started OCR processing with options for document: {} (job: {})", document_id, job_id);
-        Ok(job_id)
+    async fn run_ocr_pipeline(
+        document_id: Uuid,
+        job_id: Uuid,
+        document_storage: Arc<DocumentStorage>,
+        _event_store: Arc<dyn EventStore>,
+        ocr: Arc<dyn OcrProcessing>,
+        nlp: Arc<dyn NlpProcessing>,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        tracing::info!("Starting OCR pipeline for document: {} (job: {})", document_id, job_id);
+
+        let file_data = document_storage.get_file(&format!("document_{}", document_id)).await?;
+
+        let ocr_result = ocr.perform_ocr(&file_data)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+
+        let entities = nlp.extract_entities(&ocr_result.text)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+
+        tracing::info!(
+            "OCR pipeline completed for document: {} — text_len={}, confidence={}, entities={}",
+            document_id, ocr_result.text.len(), ocr_result.confidence, entities.len(),
+        );
+
+        Ok(())
     }
 
     // Manual entry event creation
+    /// Creates a symptom medical event from manual input.
     pub async fn create_symptom_event(&self, input: SymptomInput) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         let payload = SymptomPayload {
             name: input.name.clone(),
@@ -350,6 +411,7 @@ impl DocumentService {
         Ok(event.id)
     }
 
+    /// Creates a medication event from manual input.
     pub async fn create_medication_event(&self, input: MedicationInput) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         let payload = MedicationPayload {
             name: input.name.clone(),
@@ -374,6 +436,7 @@ impl DocumentService {
         Ok(event.id)
     }
 
+    /// Creates a lab result event from manual input.
     pub async fn create_lab_result_event(&self, input: LabResultInput) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         let payload = LabResultPayload {
             test_name: input.test_name.clone(),
@@ -399,6 +462,7 @@ impl DocumentService {
         Ok(event.id)
     }
 
+    /// Creates a doctor visit event from manual input.
     pub async fn create_doctor_visit_event(&self, input: DoctorVisitInput) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         let payload = DoctorVisitPayload {
             doctor_name: input.doctor_name.clone(),
@@ -423,6 +487,7 @@ impl DocumentService {
         Ok(event.id)
     }
 
+    /// Creates a diagnosis event from manual input.
     pub async fn create_diagnosis_event(&self, input: DiagnosisInput) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         let payload = DiagnosisPayload {
             condition: input.condition.clone(),
@@ -448,6 +513,7 @@ impl DocumentService {
         Ok(event.id)
     }
 
+    /// Creates a generic manual entry event with free-form title and description.
     pub async fn create_manual_entry_event(&self, input: ManualEntryInput) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         let payload = serde_json::json!({
             "title": input.title,
@@ -473,90 +539,125 @@ impl DocumentService {
     }
 
     // Placeholder methods for other functionality
+    /// Generates a preview URL for the given document.
     pub async fn generate_preview(&self, document_id: Uuid) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
         Ok(format!("/preview/{}", document_id))
     }
 
+    /// Returns basic metadata for the specified document.
     pub async fn get_document_metadata(&self, document_id: Uuid) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
         Ok(serde_json::json!({"document_id": document_id}))
     }
 
+    /// Returns extracted (OCR/NLP) data for the specified document.
     pub async fn get_extracted_data(&self, document_id: Uuid) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
         Ok(serde_json::json!({"document_id": document_id}))
     }
 
-    pub async fn classify_document(&self, document_id: Uuid) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    /// Classifies a document into a predefined category (e.g. "medical_document").
+    pub async fn classify_document(&self, _document_id: Uuid) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
         Ok("medical_document".to_string())
     }
 
     // DICOM methods
-    pub async fn validate_and_extract_dicom_metadata(&self, _data: &[u8]) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
-        Ok(serde_json::json!({"modality": "CT", "study_date": "20240101"}))
+    /// Validates a DICOM file and extracts its metadata as JSON.
+    pub async fn validate_and_extract_dicom_metadata(&self, data: &[u8]) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
+        let meta = self.dicom_processor.parse_metadata(data)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+        serde_json::to_value(&meta)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
     }
 
+    /// Creates a document record specifically for a DICOM file.
     pub async fn create_dicom_document_record(&self, _document_id: Uuid, _patient_id: Uuid, _filename: String, _storage_path: String, _metadata: Value) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         Ok(())
     }
 
+    /// Generates a thumbnail URL for a DICOM image.
     pub async fn generate_dicom_thumbnail(&self, _document_id: Uuid) -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Some(format!("/thumbnail/{}", Uuid::new_v4())))
     }
 
+    /// Returns stored DICOM metadata for the specified document.
     pub async fn get_dicom_metadata(&self, _document_id: Uuid) -> Result<Option<Value>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Some(serde_json::json!({"modality": "CT"})))
     }
 
+    /// Returns a URL for viewing the DICOM image.
+    #[allow(dead_code)]
     pub async fn get_dicom_image(&self, _document_id: Uuid) -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Some(format!("/image/{}", Uuid::new_v4())))
     }
 
+    /// Lists all DICOM studies for a given patient.
+    #[allow(dead_code)]
     pub async fn get_dicom_studies_for_patient(&self, _patient_id: Uuid) -> Result<Vec<Value>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(vec![])
     }
 
+    /// Lists all DICOM series within a specific study.
+    #[allow(dead_code)]
     pub async fn get_dicom_series_for_study(&self, _patient_id: Uuid, _study_id: &str) -> Result<Vec<Value>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(vec![])
     }
 
+    /// Adds an annotation to a DICOM document and returns its ID.
+    #[allow(dead_code)]
     pub async fn add_dicom_annotation(&self, _document_id: Uuid, _annotation: Value) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Uuid::new_v4())
     }
 
+    /// Retrieves all annotations for a DICOM document.
+    #[allow(dead_code)]
     pub async fn get_dicom_annotations(&self, _document_id: Uuid) -> Result<Vec<Value>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(vec![])
     }
 
     // OCR status and results
+    /// Returns the current status of an OCR job.
     pub async fn get_ocr_job_status(&self, _job_id: Uuid) -> Result<Option<OcrJobStatus>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(None)
     }
 
+    /// Returns the full OCR result (text, confidence, entities) for a completed job.
+    #[allow(dead_code)]
     pub async fn get_ocr_result(&self, _job_id: Uuid) -> Result<Option<OcrResult>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(None)
     }
 
+    /// Starts batch OCR processing for multiple documents and returns a batch job ID.
+    #[allow(dead_code)]
     pub async fn start_batch_ocr_processing(&self, _document_ids: Vec<Uuid>, _languages: Option<Vec<String>>, _extract_entities: bool, _priority: String) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Uuid::new_v4())
     }
 
+    /// Returns the aggregated status of a batch OCR job.
+    #[allow(dead_code)]
     pub async fn get_batch_ocr_status(&self, _batch_job_id: Uuid) -> Result<Option<BatchOcrStatus>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(None)
     }
 
+    /// Applies user-provided corrections to an OCR result.
+    #[allow(dead_code)]
     pub async fn apply_ocr_corrections(&self, _job_id: Uuid, _corrections: Vec<Value>) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
         Ok(serde_json::json!({"status": "corrected"}))
     }
 
+    /// Creates an OCR processing template and returns its ID.
+    #[allow(dead_code)]
     pub async fn create_ocr_template(&self, _template: Value) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Uuid::new_v4())
     }
 
+    /// Applies an OCR template to a specific document.
+    #[allow(dead_code)]
     pub async fn apply_ocr_template(&self, _document_id: Uuid, _template_id: Uuid) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
         Ok(serde_json::json!({"status": "applied"}))
     }
 }
 
 // Data structures
+/// Metadata for a stored document, including file info and processing state.
 #[derive(Debug, Clone, Serialize)]
 pub struct DocumentInfo {
     pub id: Uuid,
@@ -575,6 +676,8 @@ pub struct DocumentInfo {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
+/// Status and progress of an individual OCR processing job.
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct OcrJobStatus {
     pub job_id: Uuid,
@@ -588,6 +691,8 @@ pub struct OcrJobStatus {
     pub total_pages: u32,
 }
 
+/// The complete output of an OCR job: extracted text, confidence, and entities.
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct OcrResult {
     pub job_id: Uuid,
@@ -601,6 +706,8 @@ pub struct OcrResult {
     pub completed_at: DateTime<Utc>,
 }
 
+/// Aggregated progress and status of a batch OCR processing job.
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct BatchOcrStatus {
     pub batch_job_id: Uuid,

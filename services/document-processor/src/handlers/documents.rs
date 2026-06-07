@@ -25,6 +25,7 @@ pub struct SearchQuery {
     pub document_type: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct DocumentResponse {
     pub id: Uuid,
@@ -136,13 +137,13 @@ pub async fn upload_batch(
     
     while let Some(field) = multipart.next_field().await.map_err(|_| StatusCode::BAD_REQUEST)? {
         let filename = field.file_name().unwrap_or("unknown").to_string();
-        let content_type = field.content_type().unwrap_or("application/octet-stream").to_string();
+        let _content_type = field.content_type().unwrap_or("application/octet-stream").to_string();
         
         match field.bytes().await {
             Ok(file_data) => {
                 // Process file similar to upload_document
                 let document_id = Uuid::new_v4();
-                let storage_path = format!("/batch/{}", document_id);
+                let _storage_path = format!("/batch/{}", document_id);
                 
                 // Store file (simplified)
                 if let Ok(_) = app.document_storage.store_file(&filename, &file_data).await {

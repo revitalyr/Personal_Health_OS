@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use event_model::MedicalEvent;
 use sqlx::postgres::PgPoolOptions;
@@ -7,6 +8,7 @@ use thiserror::Error;
 use uuid::Uuid;
 use serde::de::Error as SerdeError;
 
+/// Errors that can occur during storage operations.
 #[derive(Debug, Error)]
 pub enum StorageError {
     #[error("Database error: {0}")]
@@ -22,35 +24,25 @@ pub enum StorageError {
     NotFound(String),
 }
 
+/// Convenience alias for results using StorageError.
 pub type Result<T> = std::result::Result<T, StorageError>;
 
 /// Database configuration for PostgreSQL connection
 #[derive(Debug, Clone)]
 pub struct DatabaseConfig {
-    /// Database host address
     pub host: String,
-    /// Database port
     pub port: u16,
-    /// Database name
     pub database: String,
-    /// Database username
     pub username: String,
-    /// Database password
     pub password: String,
-    /// Maximum number of connections in the pool
     pub max_connections: u32,
 }
 
 impl DatabaseConfig {
-    /// Create database configuration from environment variables
-    /// 
-    /// Environment variables:
-    /// - DB_HOST (default: "localhost")
-    /// - DB_PORT (default: "5432")
-    /// - DB_NAME (default: "health_os")
-    /// - DB_USER (default: "postgres")
-    /// - DB_PASSWORD (default: "postgres")
-    /// - DB_MAX_CONNECTIONS (default: "10")
+    /// Load database configuration from environment variables.
+    ///
+    /// Variables: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_MAX_CONNECTIONS`.
+    /// Defaults to localhost:5432/health_os with postgres/postgres credentials.
     pub fn from_env() -> Self {
         Self {
             host: env::var("DB_HOST").unwrap_or_else(|_| "localhost".to_string()),
@@ -68,6 +60,7 @@ impl DatabaseConfig {
         }
     }
 
+    /// Build a PostgreSQL connection string from the config fields.
     pub fn connection_string(&self) -> String {
         format!(
             "postgres://{}:{}@{}:{}/{}",
@@ -76,20 +69,44 @@ impl DatabaseConfig {
     }
 }
 
-/// Event store for managing medical events in PostgreSQL
+/// Trait for event storage — can be mocked in tests.
+#[async_trait]
+pub trait EventStore: Send + Sync {
+    /// Persist a new event to storage.
+    async fn store_event(&self, event: &MedicalEvent) -> Result<()>;
+    /// Retrieve all events for a patient, ordered by timestamp ascending.
+    async fn get_events_by_patient(&self, patient_id: Uuid) -> Result<Vec<MedicalEvent>>;
+    /// Retrieve events with optional date range and limit filters.
+    async fn get_events_by_patient_with_filter(
+        &self,
+        patient_id: Uuid,
+        start_date: Option<DateTime<Utc>>,
+        end_date: Option<DateTime<Utc>>,
+        limit: Option<i64>,
+    ) -> Result<Vec<MedicalEvent>>;
+    /// Retrieve a single event by its ID.
+    async fn get_event_by_id(&self, event_id: Uuid) -> Result<Option<MedicalEvent>>;
+    /// Delete an event by ID. Returns true if an event was deleted.
+    async fn delete_event(&self, event_id: Uuid) -> Result<bool>;
+    /// Get aggregate statistics for a patient's events.
+    async fn get_patient_stats(&self, patient_id: Uuid) -> Result<PatientStats>;
+    /// Ping the database. Returns true if reachable.
+    async fn health_check(&self) -> Result<bool>;
+}
+
+/// PostgreSQL-backed event store.
 #[derive(Debug, Clone)]
-pub struct EventStore {
-    /// PostgreSQL connection pool
+pub struct PostgresEventStore {
     pool: PgPool,
 }
 
-impl EventStore {
-    /// Returns a reference to the PostgreSQL connection pool
+impl PostgresEventStore {
+    /// Access the underlying connection pool (for direct SQL queries).
     pub fn pool(&self) -> &PgPool {
         &self.pool
     }
 
-    /// Create a new EventStore with the given database configuration
+    /// Create a new PostgresEventStore and connect to the database.
     pub async fn new(config: DatabaseConfig) -> Result<Self> {
         let connection_string = config.connection_string();
         
@@ -101,19 +118,15 @@ impl EventStore {
             .await
             .map_err(|e| StorageError::Connection(e.to_string()))?;
 
-        // Run migrations (commented out - migrations directory not in storage crate)
-        // sqlx::migrate!("./migrations")
-        //     .run(&pool)
-        //     .await
-        //     .map_err(|e| StorageError::Database(e))?;
-
         tracing::info!("Database connection established and migrations completed");
         
         Ok(Self { pool })
     }
+}
 
-    /// Store a medical event in the database
-    pub async fn store_event(&self, event: &MedicalEvent) -> Result<()> {
+#[async_trait]
+impl EventStore for PostgresEventStore {
+    async fn store_event(&self, event: &MedicalEvent) -> Result<()> {
         let query = r#"
             INSERT INTO medical_events (
                 id, patient_id, event_type, timestamp, payload, 
@@ -138,8 +151,7 @@ impl EventStore {
         Ok(())
     }
 
-    /// Retrieve all events for a specific patient, ordered by timestamp
-    pub async fn get_events_by_patient(&self, patient_id: Uuid) -> Result<Vec<MedicalEvent>> {
+    async fn get_events_by_patient(&self, patient_id: Uuid) -> Result<Vec<MedicalEvent>> {
         let query = r#"
             SELECT id, patient_id, event_type, timestamp, payload, 
                    source, version, created_at, updated_at
@@ -190,8 +202,7 @@ impl EventStore {
         Ok(events)
     }
 
-    /// Retrieve events for a specific patient with optional filtering
-    pub async fn get_events_by_patient_with_filter(
+    async fn get_events_by_patient_with_filter(
         &self,
         patient_id: Uuid,
         start_date: Option<DateTime<Utc>>,
@@ -277,8 +288,7 @@ impl EventStore {
         Ok(events)
     }
 
-    /// Retrieve a specific event by ID
-    pub async fn get_event_by_id(&self, event_id: Uuid) -> Result<Option<MedicalEvent>> {
+    async fn get_event_by_id(&self, event_id: Uuid) -> Result<Option<MedicalEvent>> {
         let query = r#"
             SELECT id, patient_id, event_type, timestamp, payload, 
                    source, version, created_at, updated_at
@@ -329,7 +339,7 @@ impl EventStore {
         }
     }
 
-    pub async fn delete_event(&self, event_id: Uuid) -> Result<bool> {
+    async fn delete_event(&self, event_id: Uuid) -> Result<bool> {
         let query = "DELETE FROM medical_events WHERE id = $1";
 
         let result = sqlx::query(query)
@@ -348,7 +358,7 @@ impl EventStore {
         Ok(deleted)
     }
 
-    pub async fn get_patient_stats(&self, patient_id: Uuid) -> Result<PatientStats> {
+    async fn get_patient_stats(&self, patient_id: Uuid) -> Result<PatientStats> {
         let query = r#"
             SELECT 
                 COUNT(*) as total_events,
@@ -375,7 +385,7 @@ impl EventStore {
         Ok(stats)
     }
 
-    pub async fn health_check(&self) -> Result<bool> {
+    async fn health_check(&self) -> Result<bool> {
         let result = sqlx::query("SELECT 1")
             .fetch_one(&self.pool)
             .await;
@@ -393,6 +403,7 @@ impl EventStore {
     }
 }
 
+/// Aggregate statistics for a patient's medical events.
 #[derive(Debug, Clone)]
 pub struct PatientStats {
     pub total_events: i64,
@@ -406,7 +417,7 @@ mod tests {
     use super::*;
     use event_model::{EventType, SymptomPayload};
 
-    async fn create_test_event_store() -> EventStore {
+    async fn create_test_event_store() -> PostgresEventStore {
         let config = DatabaseConfig {
             host: "localhost".to_string(),
             port: 5432,
@@ -416,7 +427,7 @@ mod tests {
             max_connections: 5,
         };
 
-        EventStore::new(config).await.unwrap()
+        PostgresEventStore::new(config).await.unwrap()
     }
 
     #[tokio::test]

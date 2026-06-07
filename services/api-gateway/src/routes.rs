@@ -1,7 +1,6 @@
 use axum::{
     routing::{get, post},
     Router,
-    middleware,
 };
 
 use crate::{app::App, handlers, middleware};
@@ -60,6 +59,6 @@ pub fn create_router(app: App) -> Router {
         // Doctor access
         .route("/doctor-access/:patient_id", post(handlers::doctor_access::generate_access))
         .route("/doctor-view/:token", get(handlers::doctor_access::view_report))
-        .layer(middleware::from_fn_with_state(app.clone(), middleware::auth_middleware))
+        .layer(axum::middleware::from_fn_with_state(app.clone(), middleware::auth_middleware))
         .with_state(app)
 }

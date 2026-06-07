@@ -4,8 +4,6 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use uuid::Uuid;
-
 use crate::app::App;
 
 pub async fn auth_middleware(

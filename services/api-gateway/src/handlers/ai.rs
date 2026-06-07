@@ -6,8 +6,12 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use telemetry::{trace_request, trace_response};
 
+use crate::app::App;
+
+/// Request body for POST /ai/reports.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct GenerateReportRequest {
     pub patient_id: Uuid,
@@ -16,6 +20,7 @@ pub struct GenerateReportRequest {
     pub include_documents: Option<bool>,
 }
 
+/// Response body for POST /ai/reports.
 #[derive(Debug, Serialize)]
 pub struct GenerateReportResponse {
     pub report_id: Uuid,
@@ -23,9 +28,10 @@ pub struct GenerateReportResponse {
     pub estimated_completion: chrono::DateTime<chrono::Utc>,
 }
 
+/// POST /ai/reports — Generate an AI-powered health report.
 pub async fn generate_report(
     State(_app): State<App>,
-    Json(payload): Json<GenerateReportRequest>,
+    Json(_payload): Json<GenerateReportRequest>,
 ) -> Result<Json<GenerateReportResponse>, StatusCode> {
     trace_request!("POST", "/ai/reports");
     

@@ -2,6 +2,7 @@ use crate::config::{Config, StorageType};
 use std::path::Path;
 use uuid::Uuid;
 use tokio::fs;
+#[allow(unused_imports)]
 use tracing::{info, error, warn};
 
 pub struct DocumentStorage {
@@ -138,6 +139,7 @@ impl DocumentStorage {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn list_files(&self, prefix: &str) -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
         match &self.config.storage_type {
             StorageType::Local => {
@@ -208,6 +210,7 @@ impl DocumentStorage {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn create_preview(&self, storage_path: &str, preview_size: (u32, u32)) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         // Get original file
         let original_data = self.get_file(storage_path).await?;
@@ -235,6 +238,7 @@ impl DocumentStorage {
         }
     }
 
+    #[allow(dead_code)]
     async fn generate_image_preview(&self, image_data: &[u8], size: (u32, u32)) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         // Use image crate to resize image
         let img = image::load_from_memory(image_data)?;
@@ -246,24 +250,28 @@ impl DocumentStorage {
         Ok(buffer)
     }
 
+    #[allow(dead_code)]
     async fn generate_pdf_preview(&self, _pdf_data: &[u8], _size: (u32, u32)) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         // TODO: Generate PDF preview (first page as image)
         warn!("PDF preview generation not implemented yet");
         Ok(vec![])
     }
 
+    #[allow(dead_code)]
     async fn generate_dicom_preview(&self, _dicom_data: &[u8], _size: (u32, u32)) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         // TODO: Generate DICOM preview
         warn!("DICOM preview generation not implemented yet");
         Ok(vec![])
     }
 
+    #[allow(dead_code)]
     async fn generate_generic_preview(&self, _data: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
         // Generate a generic file icon preview
         warn!("Generic preview generation not implemented yet");
         Ok(vec![])
     }
 
+    #[allow(dead_code)]
     pub async fn get_file_metadata(&self, storage_path: &str) -> Result<FileMetadata, Box<dyn std::error::Error + Send + Sync>> {
         let size = self.get_file_size(storage_path).await?;
         let exists = self.file_exists(storage_path).await?;
@@ -278,6 +286,7 @@ impl DocumentStorage {
         })
     }
 
+    #[allow(dead_code)]
     fn guess_content_type(&self, storage_path: &str) -> String {
         let extension = Path::new(storage_path)
             .extension()
@@ -298,6 +307,7 @@ impl DocumentStorage {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct FileMetadata {
     pub storage_path: String,

@@ -6,8 +6,11 @@ use axum::{
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use telemetry::{trace_request, trace_response};
 
+use crate::app::App;
+
+/// POST /doctor-access/{patient_id} — Generate a time-limited doctor access token.
 pub async fn generate_access(
     State(app): State<App>,
     Extension(user_id): Extension<Uuid>,
@@ -15,7 +18,6 @@ pub async fn generate_access(
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("POST", format!("/doctor-access/{}", patient_id));
 
-    // Authorization: verify user_id matches patient_id
     if user_id != patient_id {
         return Err(StatusCode::FORBIDDEN);
     }
@@ -40,13 +42,13 @@ pub async fn generate_access(
     Ok(Json(response))
 }
 
+/// GET /doctor-view/{token} — View a patient report via a time-limited access token.
 pub async fn view_report(
     State(app): State<App>,
     Path(token): Path<String>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("GET", format!("/doctor-view/{}", token));
     
-    // Validate doctor access token
     let patient_id = app.auth_service.validate_doctor_access_token(&token)
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 

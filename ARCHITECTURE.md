@@ -1,30 +1,20 @@
-# Health OS Architecture
+# Architecture
 
 ## System Overview
 
-Health OS is designed as a high-performance, event-driven system for managing personal medical records. The architecture prioritizes:
+Event-driven microservice architecture. Single API Gateway (port 8080) routes to 8 downstream services. PostgreSQL stores all data. NATS handles async event passing. Redis caches frequent queries. Jaeger collects distributed traces.
 
-- **Data integrity** through event sourcing
-- **Scalability** via microservices and message queues
-- **Security** with comprehensive access controls
-- **Performance** with optimized algorithms and caching
+## Core Patterns
 
-## Core Architectural Patterns
+### Event Sourcing
 
-### 1. Event Sourcing
-
-All medical data is stored as immutable events in the `medical_events` table. This provides:
-
-- **Complete audit trail**: Every change is recorded
-- **Temporal queries**: Reconstruct state at any point in time
-- **Data recovery**: Replay events to rebuild state
-- **Analytics**: Rich event-based analysis capabilities
+All medical data stored as immutable events in `medical_events` table:
 
 ```sql
 CREATE TABLE medical_events (
     id UUID PRIMARY KEY,
     patient_id UUID NOT NULL,
-    event_type VARCHAR(50) NOT NULL,
+    event_type VARCHAR(50) NOT NULL CHECK (event_type IN ('Symptom','Medication','LabResult','DoctorVisit','Diagnosis','Document','Vitals','Encounter')),
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
     payload JSONB NOT NULL,
     source VARCHAR(100) NOT NULL,
@@ -32,349 +22,92 @@ CREATE TABLE medical_events (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+CREATE INDEX idx_medical_events_patient_timestamp ON medical_events (patient_id, timestamp);
+CREATE INDEX idx_medical_events_payload ON medical_events USING GIN (payload);
 ```
 
-### 2. CQRS (Command Query Responsibility Segregation)
+### Trait-Based Abstraction
 
-- **Commands**: Write operations that modify state (create events)
-- **Queries**: Read operations that project state (build timelines)
+- `EventStore` trait (in `crates/storage`) enables mockable event persistence. `PostgresEventStore` is the concrete implementation.
+- Processor traits (`OcrProcessing`, `DicomProcessing`, `NlpProcessing`) in `document-processor` enable dependency injection via `Arc<dyn Trait>`.
 
-This separation allows for independent scaling of read and write operations.
+### Dual Auth Service
 
-### 3. Microservices Architecture
+- `AuthService` — lightweight JWT verification only (used by middleware in downstream services).
+- `FullAuthService` — DB-backed auth: register, login (email, Google OAuth, Apple stub, phone OTP), profile management.
 
-```
-┌─────────────────┐    ┌─────────────────┐
-│   Mobile App    │    │   Web Client    │
-└─────────┬───────┘    └─────────┬───────┘
-          │                      │
-          └──────────┬───────────┘
-                     │
-          ┌─────────────────┐
-          │  API Gateway    │
-          │  (Port 8080)    │
-          └─────────┬───────┘
-                    │
-          ┌─────────────────┐
-          │  Event Bus      │
-          │  (NATS)         │
-          └─────────┬───────┘
-     ┌──────────┼──────────┬──────────┐
-     ▼          ▼          ▼          ▼
-┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
-│Timeline │ │Document │ │ AI      │ │Doctor   │
-│Service  │ │Processor│ │Service  │ │Access   │
-│(8081)   │ │(8082)   │ │(8083)   │ │(8084)   │
-└─────────┘ └─────────┘ └─────────┘ └─────────┘
-```
+## Services
 
-## Service Details
+| Service | Port | Purpose |
+|---------|------|---------|
+| api-gateway | 8080 | Auth, routing, CORS, proxying to downstream services |
+| timeline-service | 8081 | Event CRUD, timeline build/filter/summary, anomaly detection |
+| document-processor | 8082 | Document upload, OCR pipeline, DICOM, NLP, manual entry |
+| ai-report-service | 8083 | AI report generation (stub) |
+| doctor-access-service | 8084 | 15-minute JWT tokens for temporary doctor access |
+| patient-management | 8085 | Hospital patient CRUD, encounters, vitals, allergies, medications |
+| appointment-scheduling | — | Appointment lifecycle, availability, reminders |
+| billing-invoicing | — | Invoices, payments, insurance claims |
+| licence-management | — | RSA-signed licence keys, hardware fingerprinting |
 
-### API Gateway (Port 8080)
+## Data Flows
 
-**Responsibilities:**
-- HTTP request routing and load balancing
-- Authentication and authorization
-- Request validation and rate limiting
-- CORS handling
-- API versioning
-
-**Key Features:**
-- JWT token generation and validation
-- Request/response transformation
-- Circuit breaker for downstream services
-- Comprehensive logging and tracing
-
-**Technology Stack:**
-- Rust + Axum web framework
-- JWT authentication
-- OpenTelemetry tracing
-- Tower middleware
-
-### Timeline Service (Port 8081)
-
-**Responsibilities:**
-- Event aggregation and timeline building
-- Timeline filtering and pagination
-- Anomaly detection
-- Performance optimization
-
-**Core Algorithm:**
-```rust
-pub fn build_timeline(events: Vec<MedicalEvent>) -> Timeline {
-    let mut sorted_events = events;
-    sorted_events.sort_by_key(|e| e.timestamp); // O(n log n)
-    Timeline::new(sorted_events)
-}
-```
-
-**Performance Characteristics:**
-- 1M events sorted in <30ms
-- Memory-efficient streaming for large datasets
-- Parallel processing for multiple patients
-
-**Technology Stack:**
-- Rust + Tokio async runtime
-- PostgreSQL with optimized queries
-- Redis for caching frequent timelines
-
-### Document Processor (Port 8082)
-
-**Responsibilities:**
-- File upload and storage
-- OCR processing with Tesseract
-- Medical entity extraction
-- Document classification
-
-**Processing Pipeline:**
-```
-Upload → Validation → Storage → OCR → Extraction → Indexing
-```
-
-**Supported Formats:**
-- PDF documents
-- Medical images (X-ray, MRI, DICOM)
-- Prescriptions and lab reports
-- Handwritten notes
-
-**Technology Stack:**
-- Tesseract OCR engine
-- AWS S3/Cloudflare R2 storage
-- Parallel processing workers
-- Medical NLP models
-
-### AI Report Service (Port 8083)
-
-**Responsibilities:**
-- LLM integration for report generation
-- Context building from patient data
-- Report template management
-- Quality assurance and validation
-
-**AI Pipeline:**
-```
-Patient Data → Context Building → LLM Prompt → Report Generation → Validation
-```
-
-**Supported Models:**
-- OpenAI GPT-4/GPT-3.5
-- Local models via Ollama (Llama, Mistral)
-- Custom fine-tuned medical models
-
-**RAG Implementation:**
-- Vector embeddings for medical documents
-- Semantic search for relevant context
-- Retrieval-augmented generation
-
-### Doctor Access Service (Port 8084)
-
-**Responsibilities:**
-- Temporary access token generation
-- QR code creation
-- Access logging and audit
-- Token revocation
-
-**Security Features:**
-- 15-minute token expiration
-- Single-use or limited-use tokens
-- IP-based restrictions
-- Comprehensive audit trail
-
-## Data Flow
-
-### 1. Event Creation Flow
+### Document OCR Pipeline
 
 ```
-Client → API Gateway → Event Bus → Timeline Service → Database
+Client -> API Gateway -> Document Processor
+  1. Upload: INSERT document record, save file to storage
+  2. Async pipeline (tokio::spawn):
+     a. Read file bytes
+     b. OcrProcessor::perform_ocr() -> text
+     c. MedicalEntityExtractor::extract_entities() -> entities
+     d. UPDATE document with OCR text + extracted data
+     e. Publish ocr.completed + entities.extracted to NATS
 ```
 
-1. Client submits medical event via API
-2. API Gateway validates authentication
-3. Event is published to NATS
-4. Timeline Service processes and stores event
-5. Database stores immutable event record
-
-### 2. Timeline Query Flow
+### Timeline Query
 
 ```
-Client → API Gateway → Timeline Service → Cache/Database → Response
+Client -> API Gateway -> Timeline Service -> PostgresEventStore -> TimelineEngine
+  1. get_events_by_patient() from DB
+  2. build_timeline(events) -> sort by timestamp
+  3. generate_summary(timeline) -> counts, date range, event type histogram, recent events
+  4. detect_anomalies(timeline) -> duplicates, future events, high-frequency days
 ```
 
-1. Client requests patient timeline
-2. Timeline Service checks cache first
-3. If cache miss, queries database
-4. Events are sorted and filtered
-5. Timeline is cached and returned
-
-### 3. Document Processing Flow
+### Doctor Access
 
 ```
-Client → API Gateway → Document Processor → Storage → OCR → Extraction → Database
+Patient: POST /doctor-access/:id -> generate_doctor_access_token (15min JWT) -> INSERT token hash
+Doctor:  GET /doctor-view/:token   -> validate JWT -> query patient events -> return structured report
 ```
 
-1. Client uploads document
-2. Document is stored in object storage
-3. OCR processing extracts text
-4. Medical entities are identified
-5. Structured data is stored
+## Database
 
-### 4. AI Report Generation Flow
+8 migrations covering:
 
-```
-Client → API Gateway → AI Service → Context Builder → LLM → Report → Database
-```
+1. `users` table (email + password_hash)
+2. Multi-auth (`accounts`, `user_profiles`, `otp_sessions`, `medication_reminders`)
+3. `medical_events` with JSONB payload
+4. Hospital management (13 tables: patients, encounters, vitals, allergies, medications, appointments, facilities, invoices, etc.)
+5. `documents` table with GIN index on extracted_data
+6. `doctor_access_tokens` with access count limits
+7. pgcrypto encryption for PII columns + secure views
 
-1. Client requests AI report
-2. Patient data is aggregated
-3. Context is built for LLM
-4. Report is generated
-5. Report is stored and returned
+## Infrastructure
 
-## Security Architecture
+| Component | Port |
+|-----------|------|
+| PostgreSQL | 5432 |
+| NATS | 4222 |
+| Redis | 6379 |
+| Jaeger (UDP) | 6831 |
 
-### Authentication & Authorization
+## Known Issues
 
-- **JWT Tokens**: 24-hour expiration with refresh tokens
-- **Role-Based Access**: Patient, doctor, admin roles
-- **Scope-Based Access**: Limited data access per role
-- **Token Revocation**: Immediate token invalidation
-
-### Data Protection
-
-- **Encryption at Rest**: PostgreSQL TDE, encrypted storage
-- **Encryption in Transit**: TLS 1.3 for all communications
-- **Data Masking**: Sensitive data redaction in logs
-- **Access Logging**: Complete audit trail
-
-### Compliance
-
-- **HIPAA**: Healthcare data protection standards
-- **GDPR**: EU data protection regulations
-- **Data Retention**: Configurable retention policies
-- **Right to Deletion**: Complete data removal
-
-## Performance Architecture
-
-### Caching Strategy
-
-- **Redis**: Session data, frequent timelines
-- **Application Cache**: In-memory for hot data
-- **CDN**: Static assets and document previews
-- **Database Query Cache**: Frequently accessed queries
-
-### Database Optimization
-
-- **Indexing Strategy**: Optimized for timeline queries
-- **Partitioning**: By patient_id for large datasets
-- **Connection Pooling**: Efficient resource utilization
-- **Read Replicas**: Query load distribution
-
-### Scalability Patterns
-
-- **Horizontal Scaling**: Stateless services
-- **Event-Driven Decoupling**: NATS message bus
-- **Circuit Breakers**: Fault tolerance
-- **Rate Limiting**: Protection against abuse
-
-## Monitoring & Observability
-
-### Tracing
-
-- **OpenTelemetry**: Distributed tracing
-- **Jaeger**: Trace visualization
-- **Correlation IDs**: Request tracking across services
-- **Span Context**: Operation timing analysis
-
-### Metrics
-
-- **Prometheus**: Metrics collection
-- **Grafana**: Visualization dashboards
-- **Custom Metrics**: Business and performance KPIs
-- **Alerting**: Proactive issue detection
-
-### Logging
-
-- **Structured Logging**: JSON format with correlation
-- **Log Levels**: Debug, Info, Warn, Error
-- **Log Aggregation**: Centralized log management
-- **Security Events**: Separate security audit log
-
-## Deployment Architecture
-
-### Container Strategy
-
-- **Multi-stage Builds**: Optimized Docker images
-- **Resource Limits**: CPU and memory constraints
-- **Health Checks**: Container readiness and liveness
-- **Graceful Shutdown**: Zero-downtime deployments
-
-### Orchestration
-
-- **Kubernetes**: Container orchestration
-- **Helm Charts**: Deployment templates
-- **ConfigMaps**: Configuration management
-- **Secrets Management**: Secure credential storage
-
-### Infrastructure
-
-- **Cloud Provider**: AWS/GCP/Azure
-- **Database**: Managed PostgreSQL with HA
-- **Storage**: Object storage with lifecycle policies
-- **Networking**: VPC with security groups
-
-## Development Architecture
-
-### Code Organization
-
-```
-services/          # Microservices
-├── api-gateway/
-├── timeline-service/
-├── document-processor/
-├── ai-report-service/
-└── doctor-access-service/
-
-crates/            # Shared libraries
-├── event-model/
-├── timeline-engine/
-├── auth/
-├── storage/
-└── telemetry/
-```
-
-### Development Workflow
-
-- **Local Development**: Docker Compose with all services
-- **Feature Branches**: Git flow with pull requests
-- **CI/CD Pipeline**: Automated testing and deployment
-- **Code Quality**: Automated linting and security scanning
-
-### Testing Strategy
-
-- **Unit Tests**: Individual component testing
-- **Integration Tests**: Service interaction testing
-- **E2E Tests**: Complete workflow testing
-- **Performance Tests**: Load and stress testing
-
-## Future Architecture Considerations
-
-### Scalability Enhancements
-
-- **Event Sourcing Evolution**: Kafka for high-throughput events
-- **CQRS Evolution**: Separate read/write databases
-- **Microservice Evolution**: Further service decomposition
-- **Data Evolution**: Time-series databases for analytics
-
-### Technology Evolution
-
-- **AI Enhancement**: Custom medical language models
-- **Real-time Features**: WebSocket for live updates
-- **Mobile Enhancement**: Offline-first mobile clients
-- **Integration Enhancement**: EHR system connections
-
-### Security Evolution
-
-- **Zero Trust**: Enhanced security model
-- **Blockchain**: Immutable audit trails
-- **Homomorphic Encryption**: Privacy-preserving computation
-- **Multi-Party Computation**: Secure data sharing
+- `licence-management`, `appointment-scheduling`, `billing-invoicing`, `patient-management`, `ai-report-service`, `document-processor` have pre-existing compilation errors (missing deps, broken imports, API mismatches).
+- OCR, DICOM, and AI report processors are stubs (return mock data).
+- No Kubernetes deployment configuration.
+- No CI/CD pipeline configured.
+- Mobile apps (SwiftUI, Kotlin) and web frontend (Next.js) are placeholders.

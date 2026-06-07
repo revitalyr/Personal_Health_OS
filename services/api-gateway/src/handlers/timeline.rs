@@ -6,8 +6,11 @@ use axum::{
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use telemetry::{trace_request, trace_response};
 
+use crate::app::App;
+
+/// GET /patients/{patient_id}/timeline — Get the full timeline of health events.
 pub async fn get_timeline(
     State(_app): State<App>,
     Extension(user_id): Extension<Uuid>,
@@ -15,13 +18,11 @@ pub async fn get_timeline(
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("GET", format!("/patients/{}/timeline", patient_id));
 
-    // Authorization: verify user_id matches patient_id
     if user_id != patient_id {
         return Err(StatusCode::FORBIDDEN);
     }
 
     // TODO: Call timeline service
-    // For now, return mock data
     let timeline = serde_json::json!({
         "patient_id": patient_id,
         "events": [

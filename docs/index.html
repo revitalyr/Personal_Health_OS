@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal Health OS — Architecture Documentation</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="mermaid-height-util.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background: #0d1117; color: #c9d1d9; line-height: 1.6; }
+nav { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; background: #161b22; border-right: 1px solid #30363d; overflow-y: auto; padding: 20px 0; z-index: 100; }
+nav h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: #8b949e; padding: 0 20px; margin-bottom: 12px; }
+nav a { display: block; padding: 6px 20px; color: #c9d1d9; text-decoration: none; font-size: 14px; transition: background 0.15s; }
+nav a:hover { background: #1c2333; color: #58a6ff; }
+main { margin-left: 260px; padding: 40px 48px; max-width: 1100px; }
+h1 { font-size: 32px; font-weight: 600; margin-bottom: 8px; color: #f0f6fc; }
+h2 { font-size: 24px; font-weight: 600; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #21262d; color: #f0f6fc; }
+h3 { font-size: 18px; font-weight: 600; margin: 32px 0 12px; color: #f0f6fc; }
+p { margin-bottom: 16px; color: #8b949e; }
+p strong { color: #c9d1d9; }
+ul, ol { margin-bottom: 16px; padding-left: 24px; }
+li { margin-bottom: 6px; color: #8b949e; }
+code { background: #161b22; padding: 2px 6px; border-radius: 4px; font-size: 13px; color: #f0f6fc; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+pre { background: #161b22; padding: 16px; border-radius: 8px; overflow-x: auto; margin-bottom: 16px; border: 1px solid #30363d; }
+pre code { background: none; padding: 0; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #21262d; font-size: 14px; }
+th { color: #8b949e; font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+td { color: #c9d1d9; }
+tr:hover td { background: #161b22; }
+.mermaid { background: #161b22; padding: 24px; border-radius: 12px; border: 1px solid #30363d; margin: 0; overflow: visible; min-height: 100px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-right: 4px; }
+.badge-rust { background: #2d1d35; color: #dea584; }
+.badge-db { background: #1d2d35; color: #84dea5; }
+.badge-msg { background: #1d282d; color: #84a5de; }
+.footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid #21262d; color: #484f58; font-size: 12px; text-align: center; }
+.diagram-wrapper { margin: 24px 0; border: 1px solid #30363d; border-radius: 12px; overflow: auto; resize: vertical; max-height: 90vh; }
+.diagram-container { overflow: visible; padding: 0; transition: transform 0.1s ease; }
+.scale-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: #161b22; border-bottom: 1px solid #30363d; }
+.scale-toolbar button { background: #21262d; border: 1px solid #30363d; color: #c9d1d9; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.15s; }
+.scale-toolbar button:hover { background: #30363d; }
+.scale-toolbar .scale-display { color: #8b949e; font-size: 13px; min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<nav>
+<h2>PHOS Architecture</h2>
+<a href="#overview">System Overview</a>
+<a href="#services">Services</a>
+<a href="#crates">Shared Crates</a>
+<a href="#database">Database Schema</a>
+<a href="#flows">Data Flows</a>
+<a href="#infrastructure">Infrastructure</a>
+</nav>
+
+<main>
+
+<h1>Personal Health OS</h1>
+<p><strong>Architecture Documentation</strong> &mdash; Microservice-based Personal Health Record system built in Rust with Axum, PostgreSQL, NATS, and Redis.</p>
+
+<!-- ===== SYSTEM OVERVIEW ===== -->
+<h2 id="overview">System Overview</h2>
+<p>Personal Health OS is composed of <strong>9 microservices</strong> and <strong>9 shared crates</strong>, organized as a Cargo workspace. The API Gateway serves as the single entry point, routing requests to downstream services. PostgreSQL provides the primary data store, NATS enables async event-driven communication, and Redis handles caching.</p>
+
+<div class="diagram-wrapper">
+<div class="scale-toolbar">
+<button data-scale-delta="-0.1" title="Zoom Out">−</button>
+<span class="scale-display">100%</span>
+<button data-scale-delta="0.1" title="Zoom In">+</button>
+<button data-reset-scale title="Reset Zoom">Reset</button>
+</div>
+<div class="diagram-container">
+<div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#1f6feb','primaryTextColor':'#fff','primaryBorderColor':'#1f6feb','lineColor':'#58a6ff','secondaryColor':'#21262d','tertiaryColor':'#161b22','background':'#0d1117'}}}%%
+graph TB
+    subgraph Clients
+        C1[Web App<br/>localhost:3000]
+        C2[Mobile App<br/>localhost:3001]
+        C3[External Integrations]
+    end
+    subgraph Gateway["API Gateway (Port 8080)"]
+        AG[Axum Router<br/>Auth Middleware<br/>Request Routing]
+    end
+    subgraph Services["Microservices"]
+        TS[Timeline Service<br/>Port 8081]
+        DP[Document Processor<br/>Port 8082]
+        AI[AI Report Service<br/>Port 8083]
+        DA[Doctor Access Service<br/>Port 8084]
+        PM[Patient Management<br/>Port 8085]
+    end
+    subgraph Infrastructure
+        PG[(PostgreSQL<br/>Port 5432)]
+        NS[NATS<br/>Port 4222]
+        RD[(Redis<br/>Port 6379)]
+        JG[Jaeger<br/>Port 6831]
+    end
+    C1 --> AG
+    C2 --> AG
+    C3 --> AG
+    AG --> TS
+    AG --> DP
+    AG --> AI
+    AG --> DA
+    AG --> PM
+    TS --> PG
+    DP --> PG
+    DA --> PG
+    PM --> PG
+    TS --> NS
+    DP --> NS
+    AG --> RD
+    TS --> JG
+    DP --> JG
+    PM --> JG
+</div>
+</div>
+</div>
+
+<!-- ===== SERVICES ===== -->
+<h2 id="services">Services</h2>
+
+<h3>API Gateway <span class="badge badge-rust">Axum</span> <code>:8080</code></h3>
+<p>Single entry point for all clients. Handles authentication, request routing, CORS, and proxies to downstream microservices.</p>
+<table>
+<tr><th>Category</th><th>Routes</th></tr>
+<tr><td>Auth</td><td><code>POST /auth/login</code>, <code>/auth/register</code></td></tr>
+<tr><td>Timeline</td><td><code>GET /patients/:id/timeline</code>, <code>GET/POST /patients/:id/events</code></td></tr>
+<tr><td>Documents</td><td><code>POST /documents/upload</code>, <code>GET /documents/:id</code>, <code>DELETE /documents/:id</code>, <code>GET /documents/search</code></td></tr>
+<tr><td>Manual Input</td><td><code>POST /input/symptom</code>, <code>/medication</code>, <code>/lab-result</code>, <code>/doctor-visit</code>, <code>/diagnosis</code></td></tr>
+<tr><td>DICOM</td><td><code>POST /dicom/upload</code>, <code>GET /dicom/:id/metadata</code>, <code>/image</code>, <code>/studies</code></td></tr>
+<tr><td>OCR</td><td><code>POST /ocr/process/:id</code>, <code>GET /ocr/status/:job_id</code>, <code>/result/:job_id</code></td></tr>
+<tr><td>AI</td><td><code>POST /ai/reports</code></td></tr>
+<tr><td>Doctor Access</td><td><code>POST /doctor-access/:patient_id</code>, <code>GET /doctor-view/:token</code></td></tr>
+</table>
+
+<h3>Timeline Service <span class="badge badge-rust">Axum</span> <code>:8081</code></h3>
+<p>Central event store and timeline computation. Manages the append-only <code>medical_events</code> table and publishes events to NATS.</p>
+
+<h3>Document Processor <span class="badge badge-rust">Axum</span> <code>:8082</code></h3>
+<p>Document upload, OCR processing, DICOM processing, NLP entity extraction, and manual data entry. Orchestrates the processing pipeline asynchronously.</p>
+
+<h3>Patient Management <span class="badge badge-rust">Axum</span> <code>:8085</code></h3>
+<p>Full hospital patient management: CRUD, encounters, vitals, allergies, medications, discharge, and audit trail.</p>
+
+<h3>Doctor Access Service <span class="badge badge-rust">Axum</span> <code>:8084</code></h3>
+<p>QR-code-based temporary doctor access to patient data. Issues 15-minute JWT tokens.</p>
+
+<h3>AI Report Service <span class="badge badge-rust">Axum</span> <code>:8083</code></h3>
+<p>AI-powered medical report generation (currently a stub/placeholder).</p>
+
+<h3>Appointment Scheduling <span class="badge badge-rust">Axum</span></h3>
+<p>Full appointment lifecycle: availability, booking, rescheduling, cancellation, reminders (24h + 2h), and statistics.</p>
+
+<h3>Billing &amp; Invoicing <span class="badge badge-rust">Axum</span></h3>
+<p>Invoice generation, payments, insurance claims, service charges, AR aging reports.</p>
+
+<h3>Licence Management <span class="badge badge-rust">Axum</span></h3>
+<p>SaaS licence key generation (RSA-signed), validation, hardware fingerprinting, usage analytics, tiered feature management.</p>
+
+<h2>Service Dependencies</h2>
+
+<div class="diagram-wrapper">
+<div class="scale-toolbar">
+<button data-scale-delta="-0.1" title="Zoom Out">−</button>
+<span class="scale-display">100%</span>
+<button data-scale-delta="0.1" title="Zoom In">+</button>
+<button data-reset-scale title="Reset Zoom">Reset</button>
+</div>
+<div class="diagram-container">
+<div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#1f6feb','primaryTextColor':'#fff','primaryBorderColor':'#1f6feb','lineColor':'#58a6ff','secondaryColor':'#21262d','tertiaryColor':'#161b22','background':'#0d1117'}}}%%
+graph LR
+    subgraph Auth
+        AS1[AuthService JWT only]
+        FAS[FullAuthService DB-backed]
+    end
+    subgraph Core
+        EM[event-model MedicalEvent]
+        ST[storage EventStore trait]
+        TE[timeline-engine build/filter/summary]
+    end
+    subgraph Processing
+        OP[ocr-processor]
+        DP2[dicom-processor]
+        NP[nlp-processor]
+    end
+    subgraph Types
+        HOT[health-os-types Domain newtypes]
+        TL[telemetry Tracing + Jaeger]
+    end
+    API[API Gateway] --> AS1
+    API --> FAS
+    API --> DP
+    API --> TS
+    API --> DA
+    TS --> ST
+    TS --> TE
+    TS --> EM
+    DP --> OP
+    DP --> DP2
+    DP --> NP
+    DP --> ST
+    DP --> EM
+    PM --> HOT
+</div>
+</div>
+</div>
+
+<!-- ===== SHARED CRATES ===== -->
+<h2 id="crates">Shared Crates</h2>
+
+<table>
+<tr><th>Crate</th><th>Purpose</th><th>Key Types</th></tr>
+<tr>
+<td><code>auth</code></td>
+<td>Two-tier auth: lightweight JWT + full DB-backed pipeline</td>
+<td><code>AuthService</code>, <code>FullAuthService</code>, <code>Account</code>, <code>UserProfile</code>, <code>OTPSession</code></td>
+</tr>
+<tr>
+<td><code>event-model</code></td>
+<td>Core domain events and typed payloads</td>
+<td><code>MedicalEvent</code>, <code>EventType</code> (8 variants), typed payloads</td>
+</tr>
+<tr>
+<td><code>storage</code></td>
+<td>Abstract <code>EventStore</code> trait + PostgreSQL impl</td>
+<td><code>EventStore</code> (trait), <code>PostgresEventStore</code>, <code>DatabaseConfig</code></td>
+</tr>
+<tr>
+<td><code>timeline-engine</code></td>
+<td>Timeline construction, filtering, summary, anomaly detection, export</td>
+<td><code>build_timeline</code>, <code>generate_summary</code>, <code>detect_anomalies</code></td>
+</tr>
+<tr>
+<td><code>ocr-processor</code></td>
+<td>OCR text extraction (stub)</td>
+<td><code>OcrProcessor</code>, <code>OcrResult</code></td>
+</tr>
+<tr>
+<td><code>dicom-processor</code></td>
+<td>DICOM metadata parsing (stub)</td>
+<td><code>DicomProcessor</code>, <code>DicomMetadata</code></td>
+</tr>
+<tr>
+<td><code>nlp-processor</code></td>
+<td>Medical entity extraction (keyword/regex)</td>
+<td><code>MedicalEntityExtractor</code>, <code>MedicalEntity</code></td>
+</tr>
+<tr>
+<td><code>health-os-types</code></td>
+<td>Semantic newtypes with validation</td>
+<td><code>PatientId</code>, <code>BloodType</code>, <code>HeartRate</code>, <code>BodyTemperature</code>, aggregates</td>
+</tr>
+<tr>
+<td><code>telemetry</code></td>
+<td>Distributed tracing via OpenTelemetry + Jaeger</td>
+<td><code>init_telemetry</code>, <code>shutdown</code>, span macros</td>
+</tr>
+</table>
+
+<!-- ===== DATABASE ===== -->
+<h2 id="database">Database Schema</h2>
+<p>PostgreSQL with 8 migrations. JSONB payloads for flexible event storage, GIN indexes for querying, pgcrypto encryption for PII, trigger-based audit trails.</p>
+
+<div class="diagram-wrapper">
+<div class="scale-toolbar">
+<button data-scale-delta="-0.1" title="Zoom Out">−</button>
+<span class="scale-display">100%</span>
+<button data-scale-delta="0.1" title="Zoom In">+</button>
+<button data-reset-scale title="Reset Zoom">Reset</button>
+</div>
+<div class="diagram-container">
+<div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#1f6feb','primaryTextColor':'#fff','primaryBorderColor':'#1f6feb','lineColor':'#58a6ff','secondaryColor':'#21262d','tertiaryColor':'#161b22','background':'#0d1117'}}}%%
+erDiagram
+    users ||--o{ accounts : "has"
+    accounts ||--o{ user_profiles : "has"
+    accounts ||--o{ otp_sessions : "has"
+    user_profiles ||--o{ hospital_patients : "is patient"
+    user_profiles ||--o{ medical_events : "has events"
+    hospital_patients ||--o{ medical_encounters : "has"
+    hospital_patients ||--o{ patient_vitals : "has"
+    hospital_patients ||--o{ patient_allergies : "has"
+    hospital_patients ||--o{ patient_medications : "has"
+    hospital_patients ||--o{ patient_events : "audit log"
+    hospital_patients ||--o{ appointments : "has"
+    hospital_patients ||--o{ invoices : "has"
+    hospital_patients ||--o{ doctor_access_tokens : "has"
+    hospital_patients ||--o{ documents : "has"
+    appointments ||--o{ appointment_reminders : "has"
+    appointments ||--o{ appointment_events : "audit log"
+    invoices ||--o{ invoice_items : "has"
+    invoices ||--o{ payments : "has"
+    invoices ||--o{ insurance_claims : "has"
+</div>
+</div>
+</div>
+
+<h3>Core Tables</h3>
+<table>
+<tr><th>Table</th><th>Description</th><th>Key Columns</th></tr>
+<tr><td><code>users</code></td><td>Minimal user accounts</td><td><code>id (UUID PK)</code>, <code>email (UNIQUE)</code>, <code>password_hash</code></td></tr>
+<tr><td><code>accounts</code></td><td>Multi-auth accounts</td><td><code>email</code>, <code>phone</code>, <code>google_id</code>, <code>apple_id</code></td></tr>
+<tr><td><code>user_profiles</code></td><td>Patient profiles with relationships</td><td><code>account_id (FK)</code>, <code>relationship</code> (CHECK: 6 types)</td></tr>
+<tr><td><code>medical_events</code></td><td>Append-only event log with JSONB payload</td><td><code>patient_id (FK)</code>, <code>event_type</code> (CHECK 8 types), <code>payload (JSONB, GIN)</code></td></tr>
+<tr><td><code>documents</code></td><td>Uploaded medical documents</td><td><code>storage_path</code>, <code>document_type</code> (CHECK 7), <code>ocr_extracted_text</code>, <code>extracted_data (JSONB, GIN)</code></td></tr>
+<tr><td><code>hospital_patients</code></td><td>Hospital management records</td><td><code>patient_id (UNIQUE)</code>, <code>blood_type</code>, <code>status</code> (CHECK 4), <em>encrypted PII</em></td></tr>
+</table>
+
+<h3>Audit &amp; Security</h3>
+<ul>
+<li>Structured audit trails: <code>patient_events</code>, <code>appointment_events</code>, <code>licence_events</code></li>
+<li>PGP encryption via <code>pgcrypto</code> for PII columns with secure views for transparent decryption</li>
+<li>8 valid <code>event_type</code> values: Symptom, Medication, LabResult, DoctorVisit, Diagnosis, Document, Vitals, Encounter</li>
+</ul>
+
+<!-- ===== DATA FLOWS ===== -->
+<h2 id="flows">Data Flows</h2>
+
+<h3>Document OCR Pipeline</h3>
+
+<div class="diagram-wrapper">
+<div class="scale-toolbar">
+<button data-scale-delta="-0.1" title="Zoom Out">−</button>
+<span class="scale-display">100%</span>
+<button data-scale-delta="0.1" title="Zoom In">+</button>
+<button data-reset-scale title="Reset Zoom">Reset</button>
+</div>
+<div class="diagram-container">
+<div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#1f6feb','primaryTextColor':'#fff','primaryBorderColor':'#1f6feb','lineColor':'#58a6ff','secondaryColor':'#21262d','tertiaryColor':'#161b22','background':'#0d1117'}}}%%
+sequenceDiagram
+    participant C as Client
+    participant AG as API Gateway
+    participant DP as Document Processor
+    participant FS as File Storage
+    participant OP as OCR Processor
+    participant NLP as NLP Processor
+    participant DB as PostgreSQL
+    participant NS as NATS
+    C->>AG: POST /documents/upload
+    AG->>DP: upload request
+    DP->>DB: INSERT document record
+    DP->>FS: save file
+    DP-->>AG: 201 document_id
+    AG-->>C: 201 document_id
+    DP->>DP: tokio::spawn OCR pipeline
+    DP->>FS: read file bytes
+    DP->>OP: OcrProcessor::perform_ocr()
+    OP-->>DP: OcrResult text, confidence
+    DP->>NLP: extract_entities()
+    NLP-->>DP: Vec MedicalEntity
+    DP->>DB: UPDATE documents SET ocr_text, extracted_data
+    DP->>NS: publish ocr.completed
+    DP->>NS: publish entities.extracted
+</div>
+</div>
+</div>
+
+<h3>Patient Timeline Flow</h3>
+
+<div class="diagram-wrapper">
+<div class="scale-toolbar">
+<button data-scale-delta="-0.1" title="Zoom Out">−</button>
+<span class="scale-display">100%</span>
+<button data-scale-delta="0.1" title="Zoom In">+</button>
+<button data-reset-scale title="Reset Zoom">Reset</button>
+</div>
+<div class="diagram-container">
+<div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#1f6feb','primaryTextColor':'#fff','primaryBorderColor':'#1f6feb','lineColor':'#58a6ff','secondaryColor':'#21262d','tertiaryColor':'#161b22','background':'#0d1117'}}}%%
+sequenceDiagram
+    participant C as Client
+    participant AG as API Gateway
+    participant TS as Timeline Service
+    participant TE as Timeline Engine
+    participant DB as PostgreSQL
+    participant NS as NATS
+    C->>AG: GET /patients/:id/timeline
+    AG->>TS: get_timeline(patient_id)
+    TS->>DB: get_events_by_patient()
+    DB-->>TS: Vec MedicalEvent
+    TS->>TE: build_timeline(events)
+    TS->>TE: generate_summary(timeline)
+    TE-->>TS: TimelineSummary
+    TS-->>AG: TimelineResponse
+    AG-->>C: JSON response
+    Note over TS,DB: Event creation path
+    C->>AG: POST /input/symptom
+    AG->>DP: create_symptom_event()
+    DP->>DP: MedicalEvent::new(SymptomPayload)
+    DP->>DB: store_event()
+    DP->>NS: publish medical_events.patient_id
+</div>
+</div>
+</div>
+
+<h3>Doctor Temporary Access</h3>
+
+<div class="diagram-wrapper">
+<div class="scale-toolbar">
+<button data-scale-delta="-0.1" title="Zoom Out">−</button>
+<span class="scale-display">100%</span>
+<button data-scale-delta="0.1" title="Zoom In">+</button>
+<button data-reset-scale title="Reset Zoom">Reset</button>
+</div>
+<div class="diagram-container">
+<div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#1f6feb','primaryTextColor':'#fff','primaryBorderColor':'#1f6feb','lineColor':'#58a6ff','secondaryColor':'#21262d','tertiaryColor':'#161b22','background':'#0d1117'}}}%%
+sequenceDiagram
+    participant P as Patient
+    participant AG as API Gateway
+    participant DA as Doctor Access Service
+    participant AS as Auth Service
+    participant DB as PostgreSQL
+    P->>AG: POST /doctor-access/:patient_id
+    AG->>DA: generate_access()
+    DA->>AS: generate_doctor_access_token()
+    AS-->>DA: token, expires_at
+    DA->>DB: INSERT doctor_access_tokens
+    DA-->>AG: access_token, qr_code_url, expires_at
+    AG-->>P: response
+    Note over P,DB: Doctor views report
+    D->>AG: GET /doctor-view/:token
+    AG->>DA: view_report(token)
+    DA->>AS: validate_doctor_access_token()
+    AS-->>DA: patient_id
+    DA->>DB: SELECT events for patient
+    DB-->>DA: patient data
+    DA-->>AG: Structured medical report
+    AG-->>D: response
+</div>
+</div>
+</div>
+
+<h3>Appointment Lifecycle</h3>
+
+<div class="diagram-wrapper">
+<div class="scale-toolbar">
+<button data-scale-delta="-0.1" title="Zoom Out">−</button>
+<span class="scale-display">100%</span>
+<button data-scale-delta="0.1" title="Zoom In">+</button>
+<button data-reset-scale title="Reset Zoom">Reset</button>
+</div>
+<div class="diagram-container">
+<div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#1f6feb','primaryTextColor':'#fff','primaryBorderColor':'#1f6feb','lineColor':'#58a6ff','secondaryColor':'#21262d','tertiaryColor':'#161b22','background':'#0d1117'}}}%%
+stateDiagram-v2
+    [*] --> AvailabilitySet: Set Doctor Schedule
+    AvailabilitySet --> SlotBooked: Book Appointment
+    SlotBooked --> Reminded: 24h Reminder
+    SlotBooked --> Reminded2: 2h Reminder
+    Reminded --> Completed: Appointment Done
+    Reminded2 --> Completed: Appointment Done
+    SlotBooked --> Cancelled: Cancel
+    Reminded --> Cancelled: Cancel
+    Reminded2 --> Cancelled: Cancel
+    SlotBooked --> Rescheduled: Reschedule
+    Rescheduled --> SlotBooked: New Time Booked
+</div>
+</div>
+</div>
+
+<!-- ===== INFRASTRUCTURE ===== -->
+<h2 id="infrastructure">Infrastructure</h2>
+
+<div class="diagram-wrapper">
+<div class="scale-toolbar">
+<button data-scale-delta="-0.1" title="Zoom Out">−</button>
+<span class="scale-display">100%</span>
+<button data-scale-delta="0.1" title="Zoom In">+</button>
+<button data-reset-scale title="Reset Zoom">Reset</button>
+</div>
+<div class="diagram-container">
+<div class="mermaid">
+%%{init: {'theme':'dark','themeVariables':{'primaryColor':'#1f6feb','primaryTextColor':'#fff','primaryBorderColor':'#1f6feb','lineColor':'#58a6ff','secondaryColor':'#21262d','tertiaryColor':'#161b22','background':'#0d1117'}}}%%
+graph TB
+    subgraph Host
+        subgraph RustWorkspace["Cargo Workspace - Rust"]
+            C[crates/]
+            S[services/]
+        end
+        subgraph Data
+            PG[(PostgreSQL :5432)]
+            RD[(Redis :6379)]
+            FS[(File Storage ./uploads)]
+        end
+        subgraph Messaging
+            NS[NATS :4222]
+        end
+        subgraph Observability
+            JG[Jaeger UDP :6831]
+        end
+        RustWorkspace --> PG
+        RustWorkspace --> RD
+        RustWorkspace --> NS
+        RustWorkspace --> JG
+        RustWorkspace --> FS
+    end
+    subgraph External
+        GW[Google OAuth JWKS]
+    end
+    API[API Gateway :8080] --> GW
+    API --> TS[Timeline :8081]
+    API --> DP[Document :8082]
+    API --> AI[AI Report :8083]
+    API --> DA[Doctor Access :8084]
+    API --> PM[Patient Mgmt :8085]
+</div>
+</div>
+</div>
+
+<h3>Port Allocation</h3>
+<table>
+<tr><th>Service / Component</th><th>Port</th></tr>
+<tr><td>API Gateway</td><td>8080</td></tr>
+<tr><td>Timeline Service</td><td>8081</td></tr>
+<tr><td>Document Processor</td><td>8082</td></tr>
+<tr><td>AI Report Service</td><td>8083</td></tr>
+<tr><td>Doctor Access Service</td><td>8084</td></tr>
+<tr><td>Patient Management</td><td>8085</td></tr>
+<tr><td>PostgreSQL</td><td>5432</td></tr>
+<tr><td>NATS</td><td>4222</td></tr>
+<tr><td>Redis</td><td>6379</td></tr>
+<tr><td>Jaeger (UDP)</td><td>6831</td></tr>
+</table>
+
+<div class="footer">
+  Personal Health OS &mdash; Generated from source code &middot; Rust + Axum + PostgreSQL + NATS + Redis
+</div>
+
+</main>
+<script>
+mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+        primaryColor: '#1f6feb',
+        primaryTextColor: '#fff',
+        primaryBorderColor: '#1f6feb',
+        lineColor: '#58a6ff',
+        secondaryColor: '#21262d',
+        tertiaryColor: '#161b22',
+        background: '#0d1117'
+    },
+    securityLevel: 'loose'
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const adjuster = new MermaidHeightAdjuster();
+    adjuster.init();
+});
+</script>
+</body>
+</html>

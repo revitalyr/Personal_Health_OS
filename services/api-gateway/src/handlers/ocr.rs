@@ -3,12 +3,16 @@ use axum::{
     http::StatusCode,
     response::Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use telemetry::{trace_request, trace_response};
 
+use crate::app::App;
+
+/// Request body for POST /ocr/process/{document_id}.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct OcrProcessRequest {
     pub languages: Option<Vec<String>>,
@@ -16,7 +20,9 @@ pub struct OcrProcessRequest {
     pub confidence_threshold: Option<f32>,
 }
 
+/// Request body for POST /ocr/process/batch.
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct BatchOcrRequest {
     pub document_ids: Vec<Uuid>,
     pub languages: Option<Vec<String>>,
@@ -24,12 +30,16 @@ pub struct BatchOcrRequest {
     pub priority: Option<String>,
 }
 
+/// Request body for POST /ocr/{job_id}/correct.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct OcrCorrectionRequest {
     pub job_id: Uuid,
     pub corrections: Vec<TextCorrection>,
 }
 
+/// A single text correction entry.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct TextCorrection {
     pub original_text: String,
@@ -37,6 +47,8 @@ pub struct TextCorrection {
     pub page_number: u32,
 }
 
+/// Request body for POST /ocr/templates.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct OcrTemplate {
     pub name: String,
@@ -44,6 +56,8 @@ pub struct OcrTemplate {
     pub field_mappings: Vec<FieldMapping>,
 }
 
+/// A single field mapping within an OcrTemplate.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct FieldMapping {
     pub field_name: String,
@@ -52,6 +66,7 @@ pub struct FieldMapping {
     pub required: bool,
 }
 
+/// POST /ocr/process/{document_id} — Start OCR processing on a document.
 pub async fn process_document(
     State(_app): State<App>,
     Path(document_id): Path<Uuid>,
@@ -74,6 +89,7 @@ pub async fn process_document(
     Ok(Json(response))
 }
 
+/// GET /ocr/status/{job_id} — Get the status of an OCR job.
 pub async fn get_ocr_status(
     State(_app): State<App>,
     Path(job_id): Path<Uuid>,
@@ -92,6 +108,7 @@ pub async fn get_ocr_status(
     Ok(Json(response))
 }
 
+/// GET /ocr/result/{job_id} — Get the result of a completed OCR job.
 pub async fn get_ocr_result(
     State(_app): State<App>,
     Path(job_id): Path<Uuid>,
@@ -108,6 +125,7 @@ pub async fn get_ocr_result(
     Ok(Json(response))
 }
 
+/// POST /ocr/process/batch — Start batch OCR processing on multiple documents.
 pub async fn process_batch_ocr(
     State(_app): State<App>,
     Json(_request): Json<BatchOcrRequest>,
@@ -129,6 +147,7 @@ pub async fn process_batch_ocr(
     Ok(Json(response))
 }
 
+/// GET /ocr/batch/{batch_job_id} — Get the status of a batch OCR job.
 pub async fn get_batch_ocr_status(
     State(_app): State<App>,
     Path(batch_job_id): Path<Uuid>,
@@ -147,6 +166,7 @@ pub async fn get_batch_ocr_status(
     Ok(Json(response))
 }
 
+/// POST /ocr/{job_id}/correct — Apply manual corrections to OCR output.
 pub async fn apply_ocr_corrections(
     State(_app): State<App>,
     Path(job_id): Path<Uuid>,
@@ -165,6 +185,7 @@ pub async fn apply_ocr_corrections(
     Ok(Json(response))
 }
 
+/// POST /ocr/templates — Create a reusable OCR extraction template.
 pub async fn create_ocr_template(
     State(_app): State<App>,
     Json(_template): Json<OcrTemplate>,
@@ -184,6 +205,7 @@ pub async fn create_ocr_template(
     Ok(Json(response))
 }
 
+/// POST /ocr/{document_id}/apply-template/{template_id} — Apply an OCR template to a document.
 pub async fn apply_ocr_template(
     State(_app): State<App>,
     Path((document_id, template_id)): Path<(Uuid, Uuid)>,

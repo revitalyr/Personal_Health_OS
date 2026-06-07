@@ -7,7 +7,9 @@ use event_model::{MedicalEvent, EventType};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use telemetry::{trace_request, trace_response};
+
+use crate::app::App;
 
 pub async fn create_event(
     State(app): State<App>,
@@ -46,19 +48,19 @@ pub async fn create_event(
         "api_gateway".to_string(),
     );
 
-    // Store event in database
-    app.event_store.store_event(&event)
+    // Create event via service (store + publish to NATS)
+    app.timeline_service.create_event(&event)
         .await
         .map_err(|e| {
-            tracing::error!("Failed to store event: {}", e);
+            tracing::error!("Failed to create event: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    // Publish event to NATS
-    app.nats_client.publish_event(&event)
+    // Publish timeline update notification
+    app.nats_client.publish_timeline_update(patient_id)
         .await
         .map_err(|e| {
-            tracing::error!("Failed to publish event: {}", e);
+            tracing::error!("Failed to publish timeline update: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
@@ -88,8 +90,8 @@ pub async fn get_event(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    // Get event from storage
-    let event = app.event_store.get_event_by_id(event_id)
+    // Get event via service
+    let event = app.timeline_service.get_event(event_id)
         .await
         .map_err(|e| {
             tracing::error!("Failed to get event: {}", e);
@@ -129,8 +131,8 @@ pub async fn list_events(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    // Get events from storage
-    let events = app.event_store.get_events_by_patient(patient_id)
+    // Get events via service
+    let events = app.timeline_service.get_timeline(patient_id)
         .await
         .map_err(|e| {
             tracing::error!("Failed to get events: {}", e);

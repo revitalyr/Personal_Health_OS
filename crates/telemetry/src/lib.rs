@@ -5,6 +5,11 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer, Registry};
 
+/// Initialize tracing and OpenTelemetry for the given service.
+///
+/// Sets up `tracing_subscriber` with EnvFilter (default: `info`)
+/// and configures a Jaeger exporter via `opentelemetry_jaeger`.
+/// Must be called once at service startup.
 pub fn init_telemetry(service_name: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     init_tracing(service_name)?;
     init_opentelemetry(service_name)?;
@@ -56,10 +61,14 @@ fn init_opentelemetry(service_name: &str) -> Result<(), Box<dyn std::error::Erro
     Ok(())
 }
 
+/// Gracefully shut down the tracer provider.
+///
+/// Call this during service shutdown to flush remaining spans.
 pub fn shutdown() {
     opentelemetry::global::shutdown_tracer_provider();
 }
 
+/// Log an HTTP request start with method and path.
 #[macro_export]
 macro_rules! trace_request {
     ($method:expr, $path:expr) => {
@@ -71,6 +80,7 @@ macro_rules! trace_request {
     };
 }
 
+/// Log an HTTP response with status code and duration.
 #[macro_export]
 macro_rules! trace_response {
     ($status:expr, $duration:expr) => {
@@ -82,6 +92,7 @@ macro_rules! trace_response {
     };
 }
 
+/// Log a database query execution at debug level.
 #[macro_export]
 macro_rules! trace_database_query {
     ($query:expr) => {
@@ -92,6 +103,7 @@ macro_rules! trace_database_query {
     };
 }
 
+/// Log medical event processing with type and ID.
 #[macro_export]
 macro_rules! trace_event_processing {
     ($event_type:expr, $event_id:expr) => {

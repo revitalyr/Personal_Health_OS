@@ -9,22 +9,31 @@ use chrono::{Utc, Duration};
 use rand::Rng;
 use serde_json::json;
 
-pub struct AuthService {
-    db: PgPool,
-    jwt_secret: String,
-    google_client_id: String,
-    apple_client_id: String,
-    http_client: reqwest::Client,
-}
+/// Full auth service with database persistence.
+///
+/// Handles email/password registration and login, Google OAuth, Apple sign-in,
+/// phone OTP authentication, and profile management. Requires a `PgPool` and
+/// OAuth client IDs for external providers.
+    pub struct AuthService {
+        db: PgPool,
+        jwt_secret: String,
+        google_client_id: String,
+        // Apple OAuth client ID is unused
+        _unused_apple_client_id: String,
+        http_client: reqwest::Client,
+    }
 
 impl AuthService {
+    /// Create a new FullAuthService with database pool and OAuth credentials.
+    ///
+    /// The JWT secret must be at least 32 bytes. Google and Apple client IDs
+    /// are used for OAuth token verification.
     pub fn new(
         db: PgPool,
         jwt_secret: String,
         google_client_id: String,
-        apple_client_id: String,
+        _unused_apple_client_id: String,
     ) -> Result<Self, AuthError> {
-        // Validate JWT secret minimum length (HMAC-SHA256 requires ≥32 bytes)
         if jwt_secret.len() < 32 {
             return Err(AuthError::InvalidJwtSecretLength);
         }
@@ -32,15 +41,18 @@ impl AuthService {
         Ok(Self {
             db,
             jwt_secret,
-            google_client_id,
-            apple_client_id,
+             google_client_id,
+            _unused_apple_client_id,
+
             http_client: reqwest::Client::new(),
         })
     }
 
-    /// Register a new user with email and password
+    /// Register a new user with email and password.
+    ///
+    /// Password is bcrypt-hashed via `spawn_blocking` to avoid blocking the async runtime.
+    /// Returns JWT access and refresh tokens on success.
     pub async fn register_email(&self, request: RegisterRequest) -> Result<AuthToken, AuthError> {
-        // Check if email already exists
         let existing = sqlx::query("SELECT id FROM accounts WHERE email = $1")
             .bind(&request.email)
             .fetch_optional(&self.db)
@@ -56,7 +68,6 @@ impl AuthService {
             hash(&password, DEFAULT_COST)
         }).await??;
 
-        // Create account
         let account_id = Uuid::new_v4();
         sqlx::query(
             r#"
@@ -72,7 +83,6 @@ impl AuthService {
         .execute(&self.db)
         .await?;
 
-        // Create user profile
         let profile_id = Uuid::new_v4();
         sqlx::query(
             r#"
@@ -115,8 +125,11 @@ impl AuthService {
         self.generate_tokens(account_id).await
     }
 
+    /// Authenticate using a Google ID token.
+    ///
+    /// Verifies the token against Google's JWKS endpoint (`oauth2/v3/certs`),
+    /// then finds or creates an account linked to the Google account.
     pub async fn login_google(&self, id_token: &str) -> Result<AuthToken, AuthError> {
-        // Verify Google ID token signature and claims using JWKS
         let token_data = self.verify_google_id_token(id_token).await?;
 
         let claims = token_data.claims;
@@ -158,7 +171,6 @@ impl AuthService {
                 .execute(&self.db)
                 .await?;
 
-                // Create profile
                 let profile_id = Uuid::new_v4();
                 sqlx::query(
                     r#"
@@ -192,7 +204,6 @@ impl AuthService {
 
     /// Send OTP code to phone number
     pub async fn send_otp(&self, phone: &str) -> Result<(), AuthError> {
-        // Generate 6-digit code
         let code: String = (0..6)
             .map(|_| rand::thread_rng().gen_range(0..10).to_string())
             .collect();
@@ -285,6 +296,7 @@ impl AuthService {
         self.generate_tokens(account_id).await
     }
 
+    /// Create a new patient profile for the given account.
     pub async fn create_profile(&self, account_id: Uuid, request: CreateProfileRequest) -> Result<UserProfile, AuthError> {
         let profile_id = Uuid::new_v4();
         let row = sqlx::query(

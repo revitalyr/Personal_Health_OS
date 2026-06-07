@@ -7,9 +7,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use telemetry::{trace_request, trace_response};
 
-#[derive(Debug, Deserialize)]
+use crate::app::App;
+
+/// Query parameters for GET /documents.
+#[derive(Debug, Deserialize, Serialize)]
 pub struct DocumentQuery {
     pub patient_id: Option<Uuid>,
     pub document_type: Option<String>,
@@ -17,6 +20,7 @@ pub struct DocumentQuery {
     pub offset: Option<usize>,
 }
 
+/// Query parameters for GET /documents/search.
 #[derive(Debug, Deserialize)]
 pub struct SearchQuery {
     pub q: String,
@@ -24,9 +28,10 @@ pub struct SearchQuery {
     pub document_type: Option<String>,
 }
 
+/// POST /documents/upload — Upload a single document.
 pub async fn upload_document(
-    State(app): State<App>,
-    mut multipart: Multipart,
+    State(_app): State<App>,
+    _multipart: Multipart,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("POST", "/documents/upload");
     
@@ -41,6 +46,7 @@ pub async fn upload_document(
     Ok(Json(response))
 }
 
+/// POST /documents/upload/batch — Upload multiple documents at once.
 pub async fn upload_batch(
     State(_app): State<App>,
     mut _multipart: Multipart,
@@ -57,6 +63,7 @@ pub async fn upload_batch(
     Ok(Json(response))
 }
 
+/// GET /documents/{document_id} — Retrieve a document by ID.
 pub async fn get_document(
     State(_app): State<App>,
     Path(document_id): Path<Uuid>,
@@ -74,6 +81,7 @@ pub async fn get_document(
     Ok(Json(response))
 }
 
+/// GET /documents/{document_id}/preview — Get a preview of a document.
 pub async fn get_preview(
     State(_app): State<App>,
     Path(document_id): Path<Uuid>,
@@ -90,6 +98,7 @@ pub async fn get_preview(
     Ok(Json(response))
 }
 
+/// GET /documents/{document_id}/metadata — Get document metadata.
 pub async fn get_metadata(
     State(_app): State<App>,
     Path(document_id): Path<Uuid>,
@@ -105,6 +114,7 @@ pub async fn get_metadata(
     Ok(Json(response))
 }
 
+/// GET /documents/{document_id}/extracted — Get OCR-extracted data from a document.
 pub async fn get_extracted_data(
     State(_app): State<App>,
     Path(document_id): Path<Uuid>,
@@ -120,6 +130,7 @@ pub async fn get_extracted_data(
     Ok(Json(response))
 }
 
+/// DELETE /documents/{document_id} — Delete a document.
 pub async fn delete_document(
     State(_app): State<App>,
     Path(document_id): Path<Uuid>,
@@ -136,6 +147,7 @@ pub async fn delete_document(
     Ok(Json(response))
 }
 
+/// GET /documents — List documents with optional filtering.
 pub async fn list_documents(
     State(_app): State<App>,
     Query(params): Query<DocumentQuery>,
@@ -152,6 +164,7 @@ pub async fn list_documents(
     Ok(Json(response))
 }
 
+/// GET /documents/search — Full-text search across documents.
 pub async fn search_documents(
     State(_app): State<App>,
     Query(params): Query<SearchQuery>,
@@ -161,6 +174,8 @@ pub async fn search_documents(
     let response = serde_json::json!({
         "message": "Document search forwarded to processor",
         "query": params.q,
+        "patient_id": params.patient_id,
+        "document_type": params.document_type,
         "service": "document-processor"
     });
 
@@ -168,6 +183,7 @@ pub async fn search_documents(
     Ok(Json(response))
 }
 
+/// POST /documents/{document_id}/classify — Trigger document classification.
 pub async fn classify_document(
     State(_app): State<App>,
     Path(document_id): Path<Uuid>,

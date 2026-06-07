@@ -3,14 +3,17 @@ use axum::{
     http::StatusCode,
     response::Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::Value;
 use uuid::Uuid;
 use chrono::{DateTime, Utc, NaiveDate};
 
-use crate::{app::App, trace_request, trace_response};
+use telemetry::{trace_request, trace_response};
 
-// Input structures
+use crate::app::App;
+
+/// Request body for POST /input/symptom.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct SymptomInput {
     pub patient_id: Uuid,
@@ -22,6 +25,8 @@ pub struct SymptomInput {
     pub location: Option<String>,
 }
 
+/// Request body for POST /input/medication.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct MedicationInput {
     pub patient_id: Uuid,
@@ -33,6 +38,8 @@ pub struct MedicationInput {
     pub prescribed_by: Option<String>,
 }
 
+/// Request body for POST /input/lab-result.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct LabResultInput {
     pub patient_id: Uuid,
@@ -45,6 +52,8 @@ pub struct LabResultInput {
     pub test_date: NaiveDate,
 }
 
+/// Request body for POST /input/doctor-visit.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct DoctorVisitInput {
     pub patient_id: Uuid,
@@ -56,6 +65,8 @@ pub struct DoctorVisitInput {
     pub notes: Option<String>,
 }
 
+/// Request body for POST /input/diagnosis.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct DiagnosisInput {
     pub patient_id: Uuid,
@@ -66,6 +77,8 @@ pub struct DiagnosisInput {
     pub acute: bool,
 }
 
+/// Request body for POST /input/manual.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct ManualEntryInput {
     pub patient_id: Uuid,
@@ -76,6 +89,8 @@ pub struct ManualEntryInput {
     pub category: Option<String>,
 }
 
+/// Request body for POST /input/quick-symptom.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct QuickSymptomInput {
     pub patient_id: Uuid,
@@ -83,6 +98,8 @@ pub struct QuickSymptomInput {
     pub severity: u8,
 }
 
+/// Request body for POST /input/quick-medication.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct QuickMedicationInput {
     pub patient_id: Uuid,
@@ -91,14 +108,13 @@ pub struct QuickMedicationInput {
     pub frequency: String,
 }
 
-// Symptom handlers
+/// POST /input/symptom — Log a new symptom entry.
 pub async fn create_symptom(
     State(_app): State<App>,
     Json(payload): Json<SymptomInput>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("POST", "/input/symptom");
     
-    // Validate severity
     if payload.severity < 1 || payload.severity > 10 {
         return Err(StatusCode::BAD_REQUEST);
     }
@@ -118,13 +134,13 @@ pub async fn create_symptom(
     Ok(Json(response))
 }
 
+/// POST /input/quick-symptom — Log a quick symptom entry with minimal fields.
 pub async fn create_quick_symptom(
     State(_app): State<App>,
     Json(payload): Json<QuickSymptomInput>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("POST", "/input/quick-symptom");
     
-    // Validate severity
     if payload.severity < 1 || payload.severity > 10 {
         return Err(StatusCode::BAD_REQUEST);
     }
@@ -143,14 +159,13 @@ pub async fn create_quick_symptom(
     Ok(Json(response))
 }
 
-// Medication handlers
+/// POST /input/medication — Log a new medication entry.
 pub async fn create_medication(
     State(_app): State<App>,
     Json(payload): Json<MedicationInput>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("POST", "/input/medication");
     
-    // Validate dates
     if let Some(end_date) = payload.end_date {
         if end_date <= payload.start_date {
             return Err(StatusCode::BAD_REQUEST);
@@ -171,6 +186,7 @@ pub async fn create_medication(
     Ok(Json(response))
 }
 
+/// POST /input/quick-medication — Log a quick medication entry with minimal fields.
 pub async fn create_quick_medication(
     State(_app): State<App>,
     Json(payload): Json<QuickMedicationInput>,
@@ -191,14 +207,13 @@ pub async fn create_quick_medication(
     Ok(Json(response))
 }
 
-// Lab result handler
+/// POST /input/lab-result — Log a new lab result.
 pub async fn create_lab_result(
     State(_app): State<App>,
     Json(payload): Json<LabResultInput>,
 ) -> Result<Json<Value>, StatusCode> {
     trace_request!("POST", "/input/lab-result");
     
-    // Validate status
     let valid_statuses = ["normal", "high", "low", "critical", "borderline"];
     if !valid_statuses.contains(&payload.status.as_str()) {
         return Err(StatusCode::BAD_REQUEST);
@@ -218,7 +233,7 @@ pub async fn create_lab_result(
     Ok(Json(response))
 }
 
-// Doctor visit handler
+/// POST /input/doctor-visit — Log a new doctor visit entry.
 pub async fn create_doctor_visit(
     State(_app): State<App>,
     Json(payload): Json<DoctorVisitInput>,
@@ -239,7 +254,7 @@ pub async fn create_doctor_visit(
     Ok(Json(response))
 }
 
-// Diagnosis handler
+/// POST /input/diagnosis — Log a new diagnosis.
 pub async fn create_diagnosis(
     State(_app): State<App>,
     Json(payload): Json<DiagnosisInput>,
@@ -260,7 +275,7 @@ pub async fn create_diagnosis(
     Ok(Json(response))
 }
 
-// Manual entry handler
+/// POST /input/manual — Log a generic manual entry.
 pub async fn create_manual_entry(
     State(_app): State<App>,
     Json(payload): Json<ManualEntryInput>,

@@ -17,11 +17,13 @@ pub struct OcrProcessRequest {
     pub confidence_threshold: Option<f32>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct OcrStatusQuery {
     pub include_progress: Option<bool>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct OcrJobStatus {
     pub job_id: Uuid,
@@ -35,6 +37,7 @@ pub struct OcrJobStatus {
     pub total_pages: u32,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct OcrResult {
     pub job_id: Uuid,
@@ -48,6 +51,7 @@ pub struct OcrResult {
     pub completed_at: chrono::DateTime<chrono::Utc>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct PageResult {
     pub page_number: u32,
@@ -56,6 +60,7 @@ pub struct PageResult {
     pub bounding_boxes: Vec<BoundingBox>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BoundingBox {
     pub x: f32,
@@ -66,6 +71,7 @@ pub struct BoundingBox {
     pub confidence: f32,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct MedicalEntity {
     pub text: String,
@@ -205,6 +211,7 @@ pub async fn get_ocr_result(
 }
 
 // Batch OCR processing
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct BatchOcrRequest {
     pub document_ids: Vec<Uuid>,
@@ -213,6 +220,7 @@ pub struct BatchOcrRequest {
     pub priority: Option<String>, // "low", "normal", "high"
 }
 
+#[allow(dead_code)]
 pub async fn process_batch_ocr(
     State(app): State<App>,
     Json(request): Json<BatchOcrRequest>,
@@ -249,6 +257,7 @@ pub async fn process_batch_ocr(
     Ok(Json(response))
 }
 
+#[allow(dead_code)]
 pub async fn get_batch_ocr_status(
     State(app): State<App>,
     Path(batch_job_id): Path<Uuid>,
@@ -285,12 +294,14 @@ pub async fn get_batch_ocr_status(
 }
 
 // OCR quality improvement
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct OcrCorrectionRequest {
     pub job_id: Uuid,
     pub corrections: Vec<TextCorrection>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TextCorrection {
     pub original_text: String,
@@ -299,6 +310,7 @@ pub struct TextCorrection {
     pub bounding_box: Option<BoundingBox>,
 }
 
+#[allow(dead_code)]
 pub async fn apply_ocr_corrections(
     State(app): State<App>,
     Json(request): Json<OcrCorrectionRequest>,
@@ -337,6 +349,7 @@ pub async fn apply_ocr_corrections(
 }
 
 // OCR template management
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OcrTemplate {
     pub name: String,
@@ -345,6 +358,7 @@ pub struct OcrTemplate {
     pub extraction_rules: Vec<ExtractionRule>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct FieldMapping {
     pub field_name: String,
@@ -354,6 +368,7 @@ pub struct FieldMapping {
     pub default_value: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtractionRule {
     pub rule_name: String,
@@ -362,6 +377,7 @@ pub struct ExtractionRule {
     pub confidence_threshold: f32,
 }
 
+#[allow(dead_code)]
 pub async fn create_ocr_template(
     State(app): State<App>,
     Json(template): Json<OcrTemplate>,
@@ -389,6 +405,7 @@ pub async fn create_ocr_template(
     Ok(Json(response))
 }
 
+#[allow(dead_code)]
 pub async fn apply_ocr_template(
     State(app): State<App>,
     Path((document_id, template_id)): Path<(Uuid, Uuid)>,

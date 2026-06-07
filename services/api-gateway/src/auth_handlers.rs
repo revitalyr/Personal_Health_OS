@@ -10,11 +10,12 @@ use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
-use crate::auth::{AuthService, LoginRequest, RegisterRequest, CreateProfileRequest};
+use auth::{FullAuthService, LoginRequest, RegisterRequest, CreateProfileRequest};
+use crate::app::App;
 use crate::error::AppError;
 use crate::middleware::cors_layer;
 
-pub fn auth_routes() -> Router<crate::AppState> {
+pub fn auth_routes() -> Router<App> {
     Router::new()
         .route("/register", post(register))
         .route("/login", post(login))
@@ -33,17 +34,10 @@ pub fn auth_routes() -> Router<crate::AppState> {
 }
 
 async fn register(
-    State(state): State<crate::AppState>,
+    State(state): State<App>,
     Json(request): Json<RegisterRequest>,
 ) -> Result<Json<Value>, AppError> {
-    let auth_service = AuthService::new(
-        state.db.clone(),
-        state.config.jwt_secret.clone(),
-        state.config.google_client_id.clone(),
-        state.config.apple_client_id.clone(),
-    )?;
-
-    let tokens = auth_service.register_email(request).await?;
+    let tokens = state.full_auth_service.register_email(request).await?;
 
     Ok(Json(json!({
         "success": true,
@@ -52,40 +46,33 @@ async fn register(
 }
 
 async fn login(
-    State(state): State<crate::AppState>,
+    State(state): State<App>,
     Json(request): Json<LoginRequest>,
 ) -> Result<Json<Value>, AppError> {
-    let auth_service = AuthService::new(
-        state.db.clone(),
-        state.config.jwt_secret.clone(),
-        state.config.google_client_id.clone(),
-        state.config.apple_client_id.clone(),
-    )?;
-
     let tokens = match request.provider {
-        crate::auth::ProviderType::Email => {
+        auth::ProviderType::Email => {
             if request.email.is_none() || request.password.is_none() {
                 return Err(AppError::BadRequest("Email and password required".to_string()));
             }
-            auth_service.login_email(&request.email.unwrap(), &request.password.unwrap()).await?
+            state.full_auth_service.login_email(&request.email.unwrap(), &request.password.unwrap()).await?
         }
-        crate::auth::ProviderType::Google => {
+        auth::ProviderType::Google => {
             if request.token.is_none() {
                 return Err(AppError::BadRequest("Google token required".to_string()));
             }
-            auth_service.login_google(&request.token.unwrap()).await?
+            state.full_auth_service.login_google(&request.token.unwrap()).await?
         }
-        crate::auth::ProviderType::Apple => {
+        auth::ProviderType::Apple => {
             if request.token.is_none() {
                 return Err(AppError::BadRequest("Apple token required".to_string()));
             }
-            auth_service.login_apple(&request.token.unwrap()).await?
+            state.full_auth_service.login_apple(&request.token.unwrap()).await?
         }
-        crate::auth::ProviderType::Phone => {
+        auth::ProviderType::Phone => {
             if request.phone.is_none() || request.otp_code.is_none() {
                 return Err(AppError::BadRequest("Phone and OTP code required".to_string()));
             }
-            auth_service.verify_otp(&request.phone.unwrap(), &request.otp_code.unwrap()).await?
+            state.full_auth_service.verify_otp(&request.phone.unwrap(), &request.otp_code.unwrap()).await?
         }
     };
 
@@ -96,7 +83,7 @@ async fn login(
 }
 
 async fn login_google(
-    State(state): State<crate::AppState>,
+    State(state): State<App>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, AppError> {
     let id_token = payload
@@ -104,14 +91,7 @@ async fn login_google(
         .and_then(|v| v.as_str())
         .ok_or_else(|| AppError::BadRequest("id_token required".to_string()))?;
 
-    let auth_service = AuthService::new(
-        state.db.clone(),
-        state.config.jwt_secret.clone(),
-        state.config.google_client_id.clone(),
-        state.config.apple_client_id.clone(),
-    )?;
-
-    let tokens = auth_service.login_google(id_token).await?;
+    let tokens = state.full_auth_service.login_google(id_token).await?;
 
     Ok(Json(json!({
         "success": true,
@@ -120,7 +100,7 @@ async fn login_google(
 }
 
 async fn login_apple(
-    State(state): State<crate::AppState>,
+    State(state): State<App>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, AppError> {
     let id_token = payload
@@ -128,14 +108,7 @@ async fn login_apple(
         .and_then(|v| v.as_str())
         .ok_or_else(|| AppError::BadRequest("id_token required".to_string()))?;
 
-    let auth_service = AuthService::new(
-        state.db.clone(),
-        state.config.jwt_secret.clone(),
-        state.config.google_client_id.clone(),
-        state.config.apple_client_id.clone(),
-    )?;
-
-    let tokens = auth_service.login_apple(id_token).await?;
+    let tokens = state.full_auth_service.login_apple(id_token).await?;
 
     Ok(Json(json!({
         "success": true,
@@ -144,7 +117,7 @@ async fn login_apple(
 }
 
 async fn send_otp(
-    State(state): State<crate::AppState>,
+    State(state): State<App>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, AppError> {
     let phone = payload
@@ -152,14 +125,7 @@ async fn send_otp(
         .and_then(|v| v.as_str())
         .ok_or_else(|| AppError::BadRequest("phone required".to_string()))?;
 
-    let auth_service = AuthService::new(
-        state.db.clone(),
-        state.config.jwt_secret.clone(),
-        state.config.google_client_id.clone(),
-        state.config.apple_client_id.clone(),
-    )?;
-
-    auth_service.send_otp(phone).await?;
+    state.full_auth_service.send_otp(phone).await?;
 
     Ok(Json(json!({
         "success": true,
@@ -168,7 +134,7 @@ async fn send_otp(
 }
 
 async fn verify_otp(
-    State(state): State<crate::AppState>,
+    State(state): State<App>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, AppError> {
     let phone = payload
@@ -181,14 +147,7 @@ async fn verify_otp(
         .and_then(|v| v.as_str())
         .ok_or_else(|| AppError::BadRequest("code required".to_string()))?;
 
-    let auth_service = AuthService::new(
-        state.db.clone(),
-        state.config.jwt_secret.clone(),
-        state.config.google_client_id.clone(),
-        state.config.apple_client_id.clone(),
-    )?;
-
-    let tokens = auth_service.verify_otp(phone, code).await?;
+    let tokens = state.full_auth_service.verify_otp(phone, code).await?;
 
     Ok(Json(json!({
         "success": true,
@@ -197,17 +156,10 @@ async fn verify_otp(
 }
 
 async fn get_profiles(
-    State(state): State<crate::AppState>,
+    State(state): State<App>,
     axum::extract::Extension(account_id): axum::extract::Extension<Uuid>,
 ) -> Result<Json<Value>, AppError> {
-    let auth_service = AuthService::new(
-        state.db.clone(),
-        state.config.jwt_secret.clone(),
-        state.config.google_client_id.clone(),
-        state.config.apple_client_id.clone(),
-    )?;
-
-    let profiles = auth_service.get_profiles(account_id).await?;
+    let profiles = state.full_auth_service.get_profiles(account_id).await?;
 
     Ok(Json(json!({
         "success": true,
@@ -216,18 +168,11 @@ async fn get_profiles(
 }
 
 async fn create_profile(
-    State(state): State<crate::AppState>,
+    State(state): State<App>,
     axum::extract::Extension(account_id): axum::extract::Extension<Uuid>,
     Json(request): Json<CreateProfileRequest>,
 ) -> Result<Json<Value>, AppError> {
-    let auth_service = AuthService::new(
-        state.db.clone(),
-        state.config.jwt_secret.clone(),
-        state.config.google_client_id.clone(),
-        state.config.apple_client_id.clone(),
-    )?;
-
-    let profile = auth_service.create_profile(account_id, request).await?;
+    let profile = state.full_auth_service.create_profile(account_id, request).await?;
 
     Ok(Json(json!({
         "success": true,
@@ -236,10 +181,9 @@ async fn create_profile(
 }
 
 async fn get_profile(
-    State(_state): State<crate::AppState>,
+    State(_state): State<App>,
     Path(profile_id): Path<Uuid>,
 ) -> Result<Json<Value>, AppError> {
-    // Implementation to get specific profile
     Ok(Json(json!({
         "success": true,
         "data": {"id": profile_id}

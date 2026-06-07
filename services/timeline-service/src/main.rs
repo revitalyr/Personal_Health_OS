@@ -1,16 +1,5 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::Json,
-    routing::{get, post},
-    Router,
-};
 use std::net::SocketAddr;
-use std::sync::Arc;
-use tower::ServiceBuilder;
-use tower_http::trace::TraceLayer;
-use tracing::{info, error};
-use uuid::Uuid;
+use tracing::info;
 
 mod app;
 mod config;
@@ -26,19 +15,16 @@ use config::Config;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Initialize telemetry
-    telemetry::init_telemetry("timeline-service")?;
+    telemetry::init_telemetry("timeline-service")
+        .map_err(|e| anyhow::anyhow!("Failed to initialize telemetry: {}", e))?;
 
-    // Load configuration
     let config = Config::from_env()?;
     info!("Timeline Service configuration loaded");
 
-    // Build application
     let app = App::build(&config).await?;
 
-    // Create router
     let router = routes::create_router(app);
 
-    // Start server
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
     info!("Timeline Service starting on {}", addr);
 

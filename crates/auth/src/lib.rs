@@ -26,6 +26,9 @@ pub struct AuthService {
 }
 
 impl AuthService {
+    /// Create a new AuthService with the given JWT signing secret.
+    ///
+    /// The secret must be at least 32 bytes long (HMAC-SHA256 minimum).
     pub fn new(jwt_secret: &str) -> Result<Self> {
         if jwt_secret.len() < 32 {
             return Err(AuthError::InvalidJwtSecretLength);
@@ -37,6 +40,7 @@ impl AuthService {
         })
     }
 
+    /// Verify a JWT token and return the user ID from the `sub` claim.
     pub fn verify_token(&self, token: &str) -> Result<Uuid> {
         let mut validation = Validation::new(Algorithm::HS256);
         validation.set_issuer(&[&self.iss]);
@@ -50,10 +54,12 @@ impl AuthService {
         Ok(Uuid::parse_str(sub)?)
     }
 
+    /// Extract the user ID from a JWT token (alias for `verify_token`).
     pub fn extract_user_id(&self, token: &str) -> Result<Uuid> {
         self.verify_token(token)
     }
 
+    /// Generate a 1-hour JWT token for the given user.
     pub fn generate_token(&self, user: &User) -> Result<String> {
         let now = Utc::now();
         let claims = json!({
@@ -73,6 +79,10 @@ impl AuthService {
         Ok(token)
     }
 
+    /// Generate a short-lived JWT token for temporary doctor access.
+    ///
+    /// The token carries a `type: "doctor_access"` claim for validation.
+    /// Default expiry is 15 minutes.
     pub fn generate_doctor_access_token(&self, patient_id: Uuid, expiry_minutes: u32) -> Result<String> {
         let now = Utc::now();
         let claims = json!({
@@ -91,6 +101,9 @@ impl AuthService {
         Ok(token)
     }
 
+    /// Validate a doctor access token and return the associated patient ID.
+    ///
+    /// Rejects tokens without the `type: "doctor_access"` claim.
     pub fn validate_doctor_access_token(&self, token: &str) -> Result<Uuid> {
         let mut validation = Validation::new(Algorithm::HS256);
         validation.set_issuer(&[&self.iss]);

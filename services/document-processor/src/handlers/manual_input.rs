@@ -4,7 +4,7 @@ use axum::{
     response::Json,
 };
 use chrono::{NaiveDate, Utc};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::Value;
 use uuid::Uuid;
 
@@ -12,6 +12,7 @@ use crate::app::App;
 use telemetry::{trace_request, trace_response};
 
 // Manual input structures
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct SymptomInput {
     pub patient_id: Uuid,
@@ -20,24 +21,26 @@ pub struct SymptomInput {
     pub description: Option<String>,
     pub duration: Option<String>,
     pub started_at: Option<chrono::DateTime<Utc>>,
-    pub location: Option<String>, // body part
+    pub location: Option<String>,
     pub triggers: Option<Vec<String>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct MedicationInput {
     pub patient_id: Uuid,
     pub name: String,
     pub dosage: String,
     pub frequency: String,
-    pub route: Option<String>, // oral, injection, etc.
+    pub route: Option<String>,
     pub start_date: chrono::DateTime<Utc>,
     pub end_date: Option<chrono::DateTime<Utc>>,
     pub prescribed_by: Option<String>,
     pub reason: Option<String>,
-    pub side_effects: Option<Vec<String>>,
+    pub side_effects: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct LabResultInput {
     pub patient_id: Uuid,
@@ -48,26 +51,21 @@ pub struct LabResultInput {
     pub status: String, // normal, high, low, critical
     pub facility: String,
     pub test_date: NaiveDate,
-    pub doctor: Option<String>,
-    pub notes: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct DoctorVisitInput {
     pub patient_id: Uuid,
     pub doctor_name: String,
     pub specialty: String,
     pub facility: String,
-    pub visit_date: chrono::DateTime<Utc>,
     pub reason: String,
-    pub diagnosis: Option<Vec<String>>,
-    pub symptoms_discussed: Option<Vec<String>>,
-    pub medications_prescribed: Option<Vec<String>>,
-    pub recommendations: Option<Vec<String>>,
     pub follow_up_date: Option<chrono::DateTime<Utc>>,
     pub notes: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct DiagnosisInput {
     pub patient_id: Uuid,
@@ -77,18 +75,15 @@ pub struct DiagnosisInput {
     pub diagnosis_date: NaiveDate,
     pub severity: Option<String>, // mild, moderate, severe
     pub acute: bool,
-    pub chronic: bool,
     pub notes: Option<String>,
-    pub treatment_plan: Option<Vec<String>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct ManualEntryInput {
     pub patient_id: Uuid,
-    pub entry_type: String,
     pub title: String,
     pub description: String,
-    pub entry_date: chrono::DateTime<Utc>,
     pub category: Option<String>,
     pub tags: Option<Vec<String>>,
     pub attachments: Option<Vec<Uuid>>, // Document IDs
@@ -280,6 +275,7 @@ pub async fn create_manual_entry(
 }
 
 // Helper structures for quick input
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct QuickSymptomInput {
     pub patient_id: Uuid,
@@ -287,6 +283,7 @@ pub struct QuickSymptomInput {
     pub severity: u8,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct QuickMedicationInput {
     pub patient_id: Uuid,
@@ -296,6 +293,7 @@ pub struct QuickMedicationInput {
 }
 
 // Quick input endpoints (simplified versions)
+#[allow(dead_code)]
 pub async fn create_quick_symptom(
     State(app): State<App>,
     Json(payload): Json<QuickSymptomInput>,
@@ -316,6 +314,7 @@ pub async fn create_quick_symptom(
     create_symptom(State(app), Json(full_input)).await
 }
 
+#[allow(dead_code)]
 pub async fn create_quick_medication(
     State(app): State<App>,
     Json(payload): Json<QuickMedicationInput>,

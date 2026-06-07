@@ -15,3 +15,4 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 event-model = { path = "../event-model" }
 tokio = { workspace = true }
+async-trait = { workspace = true }

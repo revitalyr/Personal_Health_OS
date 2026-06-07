@@ -1,20 +1,26 @@
 use axum::{
-    extract::{Path, State, Multipart, Extension},
+    extract::{Path, State, Multipart},
     http::StatusCode,
     response::Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{app::App, trace_request, trace_response};
+use telemetry::{trace_request, trace_response};
 
+use crate::app::App;
+
+/// Query parameters for DICOM image requests.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct DicomQuery {
     pub include_metadata: Option<bool>,
     pub include_thumbnails: Option<bool>,
 }
 
+/// Request body for POST /dicom/{document_id}/annotations.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct DicomAnnotation {
     pub x: f32,
@@ -26,6 +32,7 @@ pub struct DicomAnnotation {
     pub notes: Option<String>,
 }
 
+/// POST /dicom/upload — Upload a DICOM file.
 pub async fn upload_dicom(
     State(_app): State<App>,
     mut _multipart: Multipart,
@@ -43,6 +50,7 @@ pub async fn upload_dicom(
     Ok(Json(response))
 }
 
+/// GET /dicom/{document_id}/metadata — Retrieve DICOM metadata.
 pub async fn get_dicom_metadata(
     State(_app): State<App>,
     Path(document_id): Path<Uuid>,
@@ -60,6 +68,7 @@ pub async fn get_dicom_metadata(
     Ok(Json(response))
 }
 
+/// GET /dicom/{document_id}/image — Retrieve a rendered DICOM image.
 pub async fn get_dicom_image(
     State(_app): State<App>,
     Path(document_id): Path<Uuid>,
@@ -76,6 +85,7 @@ pub async fn get_dicom_image(
     Ok(Json(response))
 }
 
+/// GET /dicom/patients/{patient_id}/studies — List DICOM studies for a patient.
 pub async fn get_dicom_studies(
     State(_app): State<App>,
     Path(patient_id): Path<Uuid>,
@@ -92,6 +102,7 @@ pub async fn get_dicom_studies(
     Ok(Json(response))
 }
 
+/// GET /dicom/{document_id}/annotations — Retrieve annotations on a DICOM image.
 pub async fn get_dicom_annotations(
     State(_app): State<App>,
     Path(document_id): Path<Uuid>,
@@ -108,6 +119,7 @@ pub async fn get_dicom_annotations(
     Ok(Json(response))
 }
 
+/// POST /dicom/{document_id}/annotations — Add an annotation to a DICOM image.
 pub async fn add_dicom_annotation(
     State(_app): State<App>,
     Path(document_id): Path<Uuid>,
