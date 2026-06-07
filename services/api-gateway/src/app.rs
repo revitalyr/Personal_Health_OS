@@ -8,11 +8,7 @@ pub struct App {
 
 impl App {
     pub async fn build(config: &crate::config::Config) -> anyhow::Result<Self> {
-        let auth_service = Arc::new(AuthService::new(
-            config.jwt_secret.clone(),
-            "health_os".to_string(),
-            "health_os_api".to_string(),
-        )?);
+        let auth_service = Arc::new(AuthService::new(&config.jwt_secret)?);
 
         Ok(Self { auth_service })
     }

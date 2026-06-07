@@ -1,5 +1,6 @@
 use crate::models::*;
 use crate::error::AuthError;
+use crate::User;
 use sqlx::{PgPool, Row};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey, Algorithm};
@@ -395,6 +396,82 @@ impl AuthService {
             &DecodingKey::from_secret(self.jwt_secret.as_ref()),
             &validation,
         )?;
+
+        let sub = token_data.claims.get("sub").unwrap().as_str().unwrap();
+        Ok(Uuid::parse_str(sub)?)
+    }
+
+    /// Extract user ID from a token (sync, no DB)
+    pub fn extract_user_id(&self, token: &str) -> Result<Uuid, AuthError> {
+        let mut validation = Validation::new(Algorithm::HS256);
+        validation.set_issuer(&["health_os"]);
+        validation.set_audience(&["health_os_api"]);
+
+        let token_data = decode::<serde_json::Value>(
+            token,
+            &DecodingKey::from_secret(self.jwt_secret.as_ref()),
+            &validation,
+        )?;
+
+        let sub = token_data.claims.get("sub").unwrap().as_str().unwrap();
+        Ok(Uuid::parse_str(sub)?)
+    }
+
+    /// Generate a short-lived JWT for a user
+    pub fn generate_token(&self, user: &User) -> Result<String, AuthError> {
+        let now = Utc::now();
+        let claims = json!({
+            "sub": user.id.to_string(),
+            "email": user.email,
+            "name": user.name,
+            "exp": (now + Duration::hours(1)).timestamp(),
+            "iat": now.timestamp(),
+            "iss": "health_os",
+            "aud": "health_os_api",
+        });
+        let token = encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(self.jwt_secret.as_ref()),
+        )?;
+        Ok(token)
+    }
+
+    /// Generate a short-lived doctor access token
+    pub fn generate_doctor_access_token(&self, patient_id: Uuid, expiry_minutes: u32) -> Result<String, AuthError> {
+        let now = Utc::now();
+        let claims = json!({
+            "sub": patient_id.to_string(),
+            "type": "doctor_access",
+            "exp": (now + Duration::minutes(expiry_minutes as i64)).timestamp(),
+            "iat": now.timestamp(),
+            "iss": "health_os",
+            "aud": "health_os_api",
+        });
+        let token = encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(self.jwt_secret.as_ref()),
+        )?;
+        Ok(token)
+    }
+
+    /// Validate a doctor access token and return the patient ID
+    pub fn validate_doctor_access_token(&self, token: &str) -> Result<Uuid, AuthError> {
+        let mut validation = Validation::new(Algorithm::HS256);
+        validation.set_issuer(&["health_os"]);
+        validation.set_audience(&["health_os_api"]);
+
+        let token_data = decode::<serde_json::Value>(
+            token,
+            &DecodingKey::from_secret(self.jwt_secret.as_ref()),
+            &validation,
+        )?;
+
+        let token_type = token_data.claims.get("type").and_then(|v| v.as_str());
+        if token_type != Some("doctor_access") {
+            return Err(AuthError::InvalidToken("Not a doctor access token".to_string()));
+        }
 
         let sub = token_data.claims.get("sub").unwrap().as_str().unwrap();
         Ok(Uuid::parse_str(sub)?)

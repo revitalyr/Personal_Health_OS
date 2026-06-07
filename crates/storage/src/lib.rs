@@ -80,16 +80,16 @@ impl DatabaseConfig {
 #[derive(Debug, Clone)]
 pub struct EventStore {
     /// PostgreSQL connection pool
-    pub pool: PgPool,
+    pool: PgPool,
 }
 
 impl EventStore {
+    /// Returns a reference to the PostgreSQL connection pool
+    pub fn pool(&self) -> &PgPool {
+        &self.pool
+    }
+
     /// Create a new EventStore with the given database configuration
-    /// 
-    /// This will:
-    /// - Connect to PostgreSQL
-    /// - Run database migrations
-    /// - Set up the connection pool
     pub async fn new(config: DatabaseConfig) -> Result<Self> {
         let connection_string = config.connection_string();
         

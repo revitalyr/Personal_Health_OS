@@ -1,7 +1,21 @@
 use thiserror::Error;
 
+pub type Result<T> = std::result::Result<T, AuthError>;
+
 #[derive(Debug, Error)]
 pub enum AuthError {
+    #[error("Invalid token: {0}")]
+    InvalidToken(String),
+
+    #[error("Token expired")]
+    TokenExpired,
+
+    #[error("Invalid claims")]
+    InvalidClaims,
+
+    #[error("User not found")]
+    UserNotFound,
+
     #[error("Email already exists")]
     EmailAlreadyExists,
     

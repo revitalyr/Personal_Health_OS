@@ -73,7 +73,7 @@ impl DocumentService {
             .bind(document_type)
             .bind(false)
             .bind(Utc::now())
-            .execute(&self.event_store.pool)
+            .execute(self.event_store.pool())
             .await?;
 
         tracing::info!("Created document record: {} for patient: {}", document_id, patient_id);
@@ -92,7 +92,7 @@ impl DocumentService {
 
         let row = sqlx::query(query)
             .bind(document_id)
-            .fetch_optional(&self.event_store.pool)
+            .fetch_optional(self.event_store.pool())
             .await?;
 
         if let Some(row) = row {
@@ -160,7 +160,7 @@ impl DocumentService {
             sql_query = sql_query.bind(dt);
         }
 
-        let rows = sql_query.fetch_all(&self.event_store.pool).await?;
+        let rows = sql_query.fetch_all(self.event_store.pool()).await?;
 
         let mut documents = Vec::new();
         for row in rows {
@@ -228,7 +228,7 @@ impl DocumentService {
             query_builder = query_builder.bind(dt);
         }
 
-        let rows = query_builder.fetch_all(&self.event_store.pool).await?;
+        let rows = query_builder.fetch_all(self.event_store.pool()).await?;
 
         let mut documents = Vec::new();
         for row in rows {
@@ -269,7 +269,7 @@ impl DocumentService {
         let query = "DELETE FROM documents WHERE id = $1";
         sqlx::query(query)
             .bind(document_id)
-            .execute(&self.event_store.pool)
+            .execute(self.event_store.pool())
             .await?;
 
         tracing::info!("Deleted document: {}", document_id);

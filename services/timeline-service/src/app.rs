@@ -36,11 +36,7 @@ impl App {
         ));
 
         // Initialize auth service
-        let auth_service = Arc::new(AuthService::new(
-            config.jwt_secret.clone(),
-            "health_os".to_string(),
-            "health_os_api".to_string(),
-        )?);
+        let auth_service = Arc::new(AuthService::new(&config.jwt_secret)?);
 
         tracing::info!("Timeline Service application initialized");
 
